@@ -1,0 +1,2 @@
+# Dependências para o Agente Python do Professor Virtual
+google-antigravity

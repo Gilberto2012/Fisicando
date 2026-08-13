@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysEdu - Sistema Inteligente de Física para o Ensino Médio</title>
+    
+    <!-- Fontes do Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas externas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container" id="appContainer">
+        <!-- Cabeçalho Principal -->
+        <header class="app-header">
+            <div class="logo-section">
+                <h1 id="appLogo">🌌 PhysEdu <span id="appLogoSub">FÍSICA</span></h1>
+                <p id="appSubtitle">Aprendizado Inteligente e Dashboard Pedagógico de Bloom</p>
+            </div>
+            
+            <!-- Controle de Visão/Role -->
+            <nav class="role-selector">
+                <button class="role-btn active" id="btnRoleStudent" onclick="switchView('student')">👨‍🎓 Aluno</button>
+                <button class="role-btn" id="btnRoleProfessor" onclick="switchView('professor')">👩‍🏫 Professor</button>
+                <button class="role-btn" id="btnRolePresentation" onclick="switchView('presentation')">📺 Apresentação</button>
+            </nav>
+            
+            <div class="user-controls">
+                <div class="status-badge" id="userBadge">
+                    <span>🎓</span> <span id="studentNameDisplay">Visitante</span>
+                </div>
+                <div class="xp-status-badge" id="studentXpBadge" style="display: none;">
+                    <span id="studentXpVal">0 XP</span>
+                </div>
+                <button class="btn-secondary" id="btnOpenSettings" onclick="openModal('settingsModal')">
+                    ⚙️ Configurar
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO PRINCIPAL (SPA VIEWS) -->
+        <main class="main-content">
+            
+            <!-- ==============================================
+                 1. MODO ALUNO
+                 ============================================== -->
+            <div id="viewStudent" class="spa-view active">
+                
+                <!-- 1.1 Tela de Login/Apresentação -->
+                <div id="studentLoginCard" class="card login-card">
+                    <h2>Bem-vindo à Aula de Física</h2>
+                    <p class="login-sub">Digite seu nome e escolha sua turma para iniciar a jornada científica.</p>
+                    
+                    <div class="form-group">
+                        <label for="studentNameInput">Nome do Aluno</label>
+                        <input type="text" id="studentNameInput" placeholder="Ex: Arthur Silva">
+                    </div>
+                    <div class="form-group">
+                        <label for="studentClassSelect">Selecione sua Turma</label>
+                        <select id="studentClassSelect">
+                            <option value="1ºA">1º Ano A</option>
+                            <option value="1ºB">1º Ano B</option>
+                            <option value="2ºA">2º Ano A</option>
+                            <option value="2ºB">2º Ano B</option>
+                            <option value="3ºA">3º Ano A</option>
+                            <option value="3ºB">3º Ano B</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentLessonCodeInput">Código da Aula (Opcional)</label>
+                        <input type="text" id="studentLessonCodeInput" placeholder="Ex: CINEMA1 (Deixe em branco para aula padrão)">
+                    </div>
+
+                    <button class="btn-primary btn-block" id="btnStartLesson" onclick="startStudentSession()">Iniciar Aula</button>
+                    
+                    <div class="disclaimer-alert">
+                        ⚠️ <strong>Aviso:</strong> Este sistema substitui o uso direto de ferramentas como ChatGPT. Todas as interações (perguntas, respostas e tempos) são gravadas para análise pedagógica do professor.
+                    </div>
+                </div>
+
+                <!-- 1.2 Interface Principal da Aula (Chat + Tabs Auxiliares) -->
+                <div id="studentWorkspace" class="student-workspace-layout" style="display: none;">
+                    
+                    <!-- Coluna Esquerda: Chat com Professor Virtual -->
+                    <div class="chat-panel card">
+                        <div class="chat-header">
+                            <div class="chat-tutor-info">
+                                <div class="tutor-avatar">🤖</div>
+                                <div>
+                                    <h3 id="tutorName">Professor Virtual</h3>
+                                    <span class="tutor-status">Online e guiado pelo professor</span>
+                                </div>
+                            </div>
+                            <!-- Barra de progresso da aula atual -->
+                            <div class="lesson-progress-container">
+                                <span class="progress-label" id="lessonProgressText">Questão 1 de 3</span>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" id="lessonProgressBar" style="width: 33%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages -->
+                        <div class="chat-messages" id="studentChatMessages">
+                            <!-- Injetado via Javascript -->
+                        </div>
+
+                        <!-- Indicador de Digitação -->
+                        <div class="typing-container" id="studentTypingIndicator" style="display: none;">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <span>Professor Virtual está analisando sua resposta...</span>
+                        </div>
+
+                        <!-- Área de Digitação e Ações Rápidas -->
+                        <div class="chat-input-area">
+                            <div class="chat-helpers">
+                                <button class="btn-helper" id="btnGetHint" onclick="useHint()">💡 Pedir Dica (<span id="hintsLeftText">3</span> restantes)</button>
+                                <button class="btn-helper" id="btnExplainConcept" onclick="showExplanationTab()">📖 Ver Explicação</button>
+                            </div>
+                            <div class="input-box">
+                                <textarea id="studentChatInput" placeholder="Digite sua resposta aqui... (Pressione Enter para enviar)"></textarea>
+                                <button class="btn-icon" id="studentSendBtn" onclick="sendStudentMessage()">📤</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Tabs de Recursos e Suporte -->
+                    <div class="student-sidebar card">
+                        <!-- Abas da barra lateral -->
+                        <div class="sidebar-tabs">
+                            <button class="tab-btn active" id="tabBtnMultimedia" onclick="switchStudentTab('multimedia')">🚀 Recursos</button>
+                            <button class="tab-btn" id="tabBtnGamification" onclick="switchStudentTab('gamification')">🏆 Conquistas</button>
+                            <button class="tab-btn" id="tabBtnForum" onclick="switchStudentTab('forum')">💬 Fórum</button>
+                            <button class="tab-btn" id="tabBtnDirectTeacher" onclick="switchStudentTab('teacher-chat')">👨‍🏫 Falar com Prof.</button>
+                            <button class="tab-btn" id="tabBtnReport" onclick="switchStudentTab('report')">📊 Seu Relatório</button>
+                        </div>
+
+                        <!-- CONTEÚDO DAS ABAS -->
+                        <div class="sidebar-tab-content">
+                            
+                            <!-- Aba 1: Recursos Multimídia (Vídeos, PhET, Teoria, Exercícios) -->
+                            <div id="studentTabMultimedia" class="student-tab-panel active">
+                                <div class="multimedia-nav">
+                                    <button class="sub-tab-btn active" onclick="switchMultimediaSubTab('simulator')">Simulador</button>
+                                    <button class="sub-tab-btn" onclick="switchMultimediaSubTab('video')">Vídeo</button>
+                                    <button class="sub-tab-btn" id="subTabBtnTheory" onclick="switchMultimediaSubTab('theory')">Resumo Teórico</button>
+                                    <button class="sub-tab-btn" onclick="switchMultimediaSubTab('exercises')">Exercícios Extras</button>
+                                </div>
+
+                                <div class="multimedia-body">
+                                    <!-- Simulador Canvas ou PhET -->
+                                    <div id="subTabSimulator" class="sub-tab-panel active">
+                                        <!-- Simulador MUV Local Canvas -->
+                                        <div id="localMuvSimulator" style="display: none;">
+                                            <div class="canvas-container">
+                                                <canvas id="physicsCanvas"></canvas>
+                                            </div>
+                                            <div class="sim-controls">
+                                                <div class="slider-group">
+                                                    <label>Velocidade Inicial (v₀): <span id="v0Val">0</span> m/s</label>
+                                                    <input type="range" id="v0Slider" min="0" max="20" value="0" step="1" oninput="updateSimParams()">
+                                                </div>
+                                                <div class="slider-group">
+                                                    <label>Aceleração (a): <span id="accVal">2</span> m/s²</label>
+                                                    <input type="range" id="accSlider" min="-5" max="5" value="2" step="0.5" oninput="updateSimParams()">
+                                                </div>
+                                                <div class="btn-group">
+                                                    <button class="btn-secondary" id="simPlayBtn" onclick="toggleSim()">▶️ Iniciar</button>
+                                                    <button class="btn-secondary" onclick="resetSim()">🔄 Reset</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- PhET Embed Frame -->
+                                        <div id="phetSimulatorEmbed">
+                                            <iframe id="phetIframe" src="https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_all.html?locale=pt_BR" allowfullscreen></iframe>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Vídeo do YouTube -->
+                                    <div id="subTabVideo" class="sub-tab-panel">
+                                        <div class="video-container">
+                                            <iframe id="youtubeVideoFrame" src="https://www.youtube.com/embed/8w4017oQjoc" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                        </div>
+                                        <p class="media-title" id="multimediaVideoTitle">Revisão de Física para o Ensino Médio</p>
+                                    </div>
+                                    
+                                    <!-- Resumo Teórico -->
+                                    <div id="subTabTheory" class="sub-tab-panel">
+                                        <div class="theory-content" id="theoryTextContent">
+                                            <h3>Movimento Uniformemente Variado (MUV)</h3>
+                                            <p>No MUV, a velocidade do corpo varia a uma taxa constante, o que significa que a aceleração é constante e diferente de zero.</p>
+                                            <p><strong>Equações Principais:</strong></p>
+                                            <ul>
+                                                <li>Função horária da velocidade: <code>v = v0 + a*t</code></li>
+                                                <li>Função horária da posição: <code>s = s0 + v0*t + a*t²/2</code></li>
+                                                <li>Equação de Torricelli: <code>v² = v0² + 2*a*Δs</code></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Exercícios Complementares -->
+                                    <div id="subTabExercises" class="sub-tab-panel">
+                                        <div class="extra-exercises-list" id="extraExercisesContent">
+                                            <!-- Injetado dinamicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Aba 2: Gamificação (XP, Níveis, Badges, Ranking) -->
+                            <div id="studentTabGamification" class="student-tab-panel">
+                                <div class="gamification-summary">
+                                    <div class="level-card">
+                                        <div class="level-badge" id="studentLevelBadge">Aprendiz</div>
+                                        <p>Seu Nível Atual</p>
+                                    </div>
+                                    <div class="xp-progress-section">
+                                        <div class="xp-labels">
+                                            <span>Progresso de XP</span>
+                                            <span id="studentXpProgressText">0 / 200 XP</span>
+                                        </div>
+                                        <div class="xp-bar-track">
+                                            <div class="xp-bar-fill" id="studentXpProgressBar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h4 class="section-title">🏆 Seus Badges Conquistados</h4>
+                                <div class="badges-grid" id="studentBadgesGrid">
+                                    <!-- Preenchido dinamicamente -->
+                                </div>
+                                
+                                <h4 class="section-title">📊 Ranking da Turma (<span id="rankingClassLabel">1ºA</span>)</h4>
+                                <div class="leaderboard-list" id="classLeaderboardList">
+                                    <!-- Preenchido dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <!-- Aba 3: Fórum de Dúvidas -->
+                            <div id="studentTabForum" class="student-tab-panel">
+                                <div class="forum-actions">
+                                    <button class="btn-primary btn-sm" onclick="openNewForumTopicForm()">New Topic ➕</button>
+                                </div>
+                                
+                                <!-- Criar Tópico Form (Escondido por padrão) -->
+                                <div id="forumNewTopicCard" class="card forum-new-topic-card" style="display: none; margin-top: 10px; padding: 15px;">
+                                    <h5>Novo Tópico de Dúvida</h5>
+                                    <div class="form-group">
+                                        <input type="text" id="forumTopicTitleInput" placeholder="Título da dúvida (ex: Dúvida na 2ª Lei)">
+                                    </div>
+                                    <div class="form-group">
+                                        <textarea id="forumTopicContentInput" placeholder="Descreva sua dúvida detalhadamente..." rows="3"></textarea>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn-secondary btn-sm" onclick="closeNewForumTopicForm()">Cancelar</button>
+                                        <button class="btn-primary btn-sm" onclick="submitForumTopic()">Publicar</button>
+                                    </div>
+                                </div>
+
+                                <div class="forum-topics-container" id="forumTopicsList">
+                                    <!-- Injetado dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <!-- Aba 4: Chat Direto com o Professor -->
+                            <div id="studentTabTeacherChat" class="student-tab-panel">
+                                <div class="teacher-status-card">
+                                    <div class="teacher-avatar">👩‍🏫</div>
+                                    <div>
+                                        <h5>Profª. Carolina (Física)</h5>
+                                        <span class="status-indicator online" id="teacherStatusIndicator">Professor Online</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="direct-chat-messages" id="directChatMessages">
+                                    <!-- Mensagens do chat direto com o professor -->
+                                </div>
+                                
+                                <div class="direct-chat-input-area">
+                                    <input type="text" id="directChatInput" placeholder="Envie uma mensagem direta para a professora...">
+                                    <button class="btn-primary" onclick="sendDirectMessageToTeacher()">Enviar</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Aba 5: Relatório do Aluno (Evolução e Bloom) -->
+                            <div id="studentTabReport" class="student-tab-panel">
+                                <div class="report-overview-grid">
+                                    <div class="metric-card">
+                                        <h4 id="reportAvgScore">0.0</h4>
+                                        <p>Média de Notas</p>
+                                    </div>
+                                    <div class="metric-card">
+                                        <h4 id="reportTimeSpent">0 min</h4>
+                                        <p>Tempo de Aula</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="chart-container" style="position: relative; height: 180px; margin-top: 15px;">
+                                    <canvas id="studentBloomRadarChart"></canvas>
+                                </div>
+                                <p style="font-size: 0.75rem; text-align: center; color: var(--text-secondary);">Distribuição de acertos por Nível da Taxonomia de Bloom</p>
+                                
+                                <div class="recommendations-box" style="margin-top: 15px;">
+                                    <h5>📚 Recomendações de Estudo:</h5>
+                                    <ul id="studentRecommendationsList">
+                                        <li>Continue resolvendo exercícios para desbloquear novos badges!</li>
+                                    </ul>
+                                </div>
+
+                                <button class="btn-primary btn-block" style="margin-top: 15px;" onclick="openStudentFullReportModal()">Ver Relatório Completo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 2. MODO PROFESSOR (DASHBOARD)
+                 ============================================== -->
+            <div id="viewProfessor" class="spa-view">
+                <div class="professor-dashboard-layout">
+                    <!-- Sidebar do Professor -->
+                    <aside class="professor-sidebar card">
+                        <div class="sidebar-header">
+                            <h3>Menu do Docente</h3>
+                        </div>
+                        <nav class="professor-nav">
+                            <button class="prof-nav-btn active" id="btnProfTabLessons" onclick="switchProfessorTab('lessons')">📝 Criação de Aula</button>
+                            <button class="prof-nav-btn" id="btnProfTabAnalytics" onclick="switchProfessorTab('analytics')">📊 Relatórios e Análises</button>
+                        </nav>
+                    </aside>
+
+                    <!-- Área de Conteúdo do Professor -->
+                    <section class="professor-content-area">
+                        
+                        <!-- ABA A: CRIAÇÃO DE AULAS (4 MODOS) -->
+                        <div id="profTabLessons" class="prof-tab-panel active">
+                            <div class="lesson-creation-header">
+                                <h2>Criação de Aulas de Física</h2>
+                                <p>Crie novas atividades interativas usando o banco de dados de Bloom ou assistentes automáticos.</p>
+                            </div>
+                            
+                            <!-- Sub-Abas de Criação -->
+                            <div class="creation-modes-tabs">
+                                <button class="mode-tab-btn active" onclick="switchCreationMode('manual')">Modo 1: Manual</button>
+                                <button class="mode-tab-btn" onclick="switchCreationMode('auto')">Modo 2: Automático</button>
+                                <button class="mode-tab-btn" onclick="switchCreationMode('curator')">Modo 3: Curador</button>
+                                <button class="mode-tab-btn" onclick="switchCreationMode('prompt')">Modo 4: Prompt Personalizado</button>
+                            </div>
+
+                            <div class="creation-modes-body card">
+                                
+                                <!-- MODO 1: MANUAL -->
+                                <div id="modeManual" class="creation-mode-panel active">
+                                    <h4>Nova Aula Interativa (Criação Manual)</h4>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="manLessonTitle">Título da Aula</label>
+                                            <input type="text" id="manLessonTitle" placeholder="Ex: Exercícios de Leis de Newton">
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="manLessonTopic">Tópico</label>
+                                            <select id="manLessonTopic">
+                                                <option value="Cinemática">Cinemática</option>
+                                                <option value="Leis de Newton">Leis de Newton</option>
+                                                <option value="Termodinâmica">Termodinâmica</option>
+                                                <option value="Ondulatória">Ondulatória</option>
+                                                <option value="Óptica">Óptica</option>
+                                                <option value="Eletricidade">Eletricidade</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="manual-questions-list" id="manQuestionsContainer">
+                                        <!-- Bloco de Pergunta Manual (Injetado via JS ou fixo inicial) -->
+                                        <div class="manual-question-block card">
+                                            <h5>Pergunta 1</h5>
+                                            <div class="form-group">
+                                                <label>Enunciado da Pergunta</label>
+                                                <textarea class="man-q-enunciado" placeholder="Digite a pergunta para o estudante..."></textarea>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group col-4">
+                                                    <label>Nível Bloom</label>
+                                                    <select class="man-q-bloom">
+                                                        <option value="remember">Lembrar</option>
+                                                        <option value="understand">Compreender</option>
+                                                        <option value="apply">Aplicar</option>
+                                                        <option value="analyze">Analisar</option>
+                                                        <option value="evaluate">Avaliar</option>
+                                                        <option value="create">Criar</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group col-4">
+                                                    <label>Tipo de Pergunta</label>
+                                                    <select class="man-q-type">
+                                                        <option value="conceitual">Conceitual</option>
+                                                        <option value="calculo">Cálculo</option>
+                                                        <option value="grafico">Gráfico</option>
+                                                        <option value="cotidiano">Cotidiano</option>
+                                                        <option value="enem">ENEM</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group col-4">
+                                                    <label>Dificuldade</label>
+                                                    <select class="man-q-difficulty">
+                                                        <option value="1">Fácil</option>
+                                                        <option value="2">Médio</option>
+                                                        <option value="3">Difícil</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group col-6">
+                                                    <label>Palavras-Chave de Correção (Separadas por vírgula)</label>
+                                                    <input type="text" class="man-q-keywords" placeholder="Ex: inércia, ônibus, continuar, movimento">
+                                                </div>
+                                                <div class="form-group col-6">
+                                                    <label>Resposta Esperada</label>
+                                                    <input type="text" class="man-q-expected" placeholder="Resposta exata ou descrição completa">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Dicas de Ajuda (Máximo 3, separadas por barra vertical | )</label>
+                                                <input type="text" class="man-q-hints" placeholder="Dica 1 | Dica 2 | Dica 3">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-actions">
+                                        <button class="btn-secondary" onclick="addManualQuestionField()">➕ Adicionar Pergunta</button>
+                                        <button class="btn-primary" onclick="saveManualLesson()">Salvar Aula Interativa</button>
+                                    </div>
+                                </div>
+
+                                <!-- MODO 2: AUTOMÁTICO -->
+                                <div id="modeAuto" class="creation-mode-panel">
+                                    <h4>Assistente Automático de Aulas</h4>
+                                    <p class="info-text">O sistema irá selecionar e montar uma trilha pedagógica equilibrada a partir do banco de dados baseado na série e tópicos selecionados.</p>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group col-4">
+                                            <label for="autoLessonTopic">Selecione o Tópico de Física</label>
+                                            <select id="autoLessonTopic">
+                                                <option value="Cinemática">Cinemática (MUV/Queda Livre)</option>
+                                                <option value="Leis de Newton">Leis de Newton</option>
+                                                <option value="Termodinâmica">Termodinâmica</option>
+                                                <option value="Ondulatória">Ondulatória</option>
+                                                <option value="Óptica">Óptica</option>
+                                                <option value="Eletricidade">Eletricidade</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-4">
+                                            <label for="autoLessonSeries">Série do Ensino Médio</label>
+                                            <select id="autoLessonSeries">
+                                                <option value="1º EM">1º Ano E.M.</option>
+                                                <option value="2º EM">2º Ano E.M.</option>
+                                                <option value="3º EM">3º Ano E.M.</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-4">
+                                            <label for="autoLessonQty">Quantidade de Perguntas</label>
+                                            <input type="number" id="autoLessonQty" min="3" max="10" value="3">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Incluir Níveis de Bloom (Selecione pelo menos um):</label>
+                                        <div class="checkbox-group">
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="remember" checked> Lembrar</label>
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="understand" checked> Compreender</label>
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="apply" checked> Aplicar</label>
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="analyze" checked> Analisar</label>
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="evaluate" checked> Avaliar</label>
+                                            <label><input type="checkbox" class="auto-bloom-cb" value="create" checked> Criar</label>
+                                        </div>
+                                    </div>
+
+                                    <button class="btn-primary" onclick="generateAutoLesson()">Gerar Aula Automaticamente</button>
+                                    
+                                    <!-- Preview da Trilha Gerada -->
+                                    <div id="autoLessonPreview" style="display: none; margin-top: 20px;">
+                                        <h5>Prévia da Aula Gerada</h5>
+                                        <div class="preview-questions-container" id="autoPreviewList">
+                                            <!-- Injetado via JS -->
+                                        </div>
+                                        <div class="form-group" style="margin-top: 15px;">
+                                            <label for="autoLessonTitleInput">Título da Aula Gerada</label>
+                                            <input type="text" id="autoLessonTitleInput" value="Aula Automática">
+                                        </div>
+                                        <button class="btn-success" onclick="saveAutoLesson()">Confirmar e Salvar Aula</button>
+                                    </div>
+                                </div>
+
+                                <!-- MODO 3: CURADOR (BANCO DE QUESTÕES) -->
+                                <div id="modeCurator" class="creation-mode-panel">
+                                    <h4>Curador: Banco de Questões de Física</h4>
+                                    
+                                    <div class="curator-filters">
+                                        <input type="text" id="curSearchInput" placeholder="🔍 Buscar por palavra-chave..." oninput="filterCuratorBank()">
+                                        <select id="curTopicFilter" onchange="filterCuratorBank()">
+                                            <option value="">Todos os Tópicos</option>
+                                            <option value="Cinemática">Cinemática</option>
+                                            <option value="Leis de Newton">Leis de Newton</option>
+                                            <option value="Termodinâmica">Termodinâmica</option>
+                                            <option value="Ondulatória">Ondulatória</option>
+                                            <option value="Óptica">Óptica</option>
+                                            <option value="Eletricidade">Eletricidade</option>
+                                        </select>
+                                        <select id="curBloomFilter" onchange="filterCuratorBank()">
+                                            <option value="">Todos os Níveis Bloom</option>
+                                            <option value="remember">Lembrar</option>
+                                            <option value="understand">Compreender</option>
+                                            <option value="apply">Aplicar</option>
+                                            <option value="analyze">Analisar</option>
+                                            <option value="evaluate">Avaliar</option>
+                                            <option value="create">Criar</option>
+                                        </select>
+                                        <select id="curDiffFilter" onchange="filterCuratorBank()">
+                                            <option value="">Todas as Dificuldades</option>
+                                            <option value="1">Fácil</option>
+                                            <option value="2">Médio</option>
+                                            <option value="3">Difícil</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="curator-list-wrapper">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th width="40">Selecionar</th>
+                                                    <th>Enunciado</th>
+                                                    <th>Tópico</th>
+                                                    <th>Nível Bloom</th>
+                                                    <th>Dificuldade</th>
+                                                    <th>Tipo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="curatorQuestionTableBody">
+                                                <!-- Injetado dinamicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="form-row" style="margin-top: 15px; align-items: flex-end;">
+                                        <div class="form-group col-6">
+                                            <label for="curatorLessonTitle">Título da Aula por Curadoria</label>
+                                            <input type="text" id="curatorLessonTitle" placeholder="Ex: Trilha Especial de Óptica">
+                                        </div>
+                                        <div class="form-group col-6" style="display: flex; gap: 10px;">
+                                            <button class="btn-primary" onclick="saveCuratorLesson()">Criar Aula com Selecionadas</button>
+                                            <button class="btn-secondary" onclick="document.getElementById('jsonFileInput').click()">Importar Questões (JSON)</button>
+                                            <input type="file" id="jsonFileInput" style="display: none;" accept=".json" onchange="importQuestionsJSON(event)">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- MODO 4: PROMPT PERSONALIZADO -->
+                                <div id="modePrompt" class="creation-mode-panel">
+                                    <h4>Configurações de Prompt do Tutor Virtual</h4>
+                                    <p class="info-text">Configure como a IA do Professor Virtual deve responder às dúvidas e orientações dos alunos de cada série/turma.</p>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="promptClassSelect">Selecione a Série/Turma Alvo</label>
+                                            <select id="promptClassSelect" onchange="loadClassPromptSettings()">
+                                                <option value="1º EM">1º Ano Ensino Médio</option>
+                                                <option value="2º EM">2º Ano Ensino Médio</option>
+                                                <option value="3º EM">3º Ano Ensino Médio</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-6" style="display: flex; gap: 10px; align-items: flex-end;">
+                                            <button class="btn-secondary btn-block" onclick="useSuggestedPrompt('tutor')">Tutor Direto</button>
+                                            <button class="btn-secondary btn-block" onclick="useSuggestedPrompt('patient')">Professor Paciente</button>
+                                            <button class="btn-secondary btn-block" onclick="useSuggestedPrompt('challenger')">Professor Desafiador</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="customPromptEditor">Prompt Base do Professor Virtual (Persona da IA)</label>
+                                        <textarea id="customPromptEditor" rows="6" placeholder="Defina as instruções de comportamento da IA..."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="promptExtraInstructions">Instruções Adicionais específicas da Turma</label>
+                                        <input type="text" id="promptExtraInstructions" placeholder="Ex: Sempre citar o livro texto capítulo 4.">
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button class="btn-secondary" onclick="applyPromptToAllClasses()">Aplicar a Todas as Turmas</button>
+                                        <button class="btn-primary" onclick="saveClassPromptSettings()">Salvar Configurações de Prompt</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Aulas Criadas -->
+                            <div class="card created-lessons-card" style="margin-top: 20px;">
+                                <h4>Aulas Disponíveis no Sistema</h4>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Código Único</th>
+                                            <th>Título da Aula</th>
+                                            <th>Tópico</th>
+                                            <th>Série</th>
+                                            <th>Questões</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="createdLessonsTableBody">
+                                        <!-- Injetado dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ABA B: RELATÓRIOS E ANALÍTICAS -->
+                        <div id="profTabAnalytics" class="prof-tab-panel">
+                            <div class="analytics-header">
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <h2>Dashboard de Análise Pedagógica</h2>
+                                    <div>
+                                        <label for="analyticsClassSelect" style="font-size: 0.85rem; color: var(--text-secondary); margin-right: 8px;">Filtrar Turma:</label>
+                                        <select id="analyticsClassSelect" onchange="renderAnalyticsDashboard()" style="padding: 6px 12px; border-radius: 8px; background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid var(--panel-border);">
+                                            <option value="Todos">Todas as Turmas</option>
+                                            <option value="1ºA">1º Ano A</option>
+                                            <option value="1ºB">1º Ano B</option>
+                                            <option value="2ºA">2º Ano A</option>
+                                            <option value="2ºB">2º Ano B</option>
+                                            <option value="3ºA">3º Ano A</option>
+                                            <option value="3ºB">3º Ano B</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cards de Visão Geral -->
+                            <div class="stats-overview-grid">
+                                <div class="metric-card">
+                                    <h3 id="classCardTotalStudents">0</h3>
+                                    <p>Total de Alunos</p>
+                                </div>
+                                <div class="metric-card">
+                                    <h3 id="classCardAvgScore">0.0</h3>
+                                    <p>Média Geral de Notas</p>
+                                </div>
+                                <div class="metric-card">
+                                    <h3 id="classCardSuccessRate">0%</h3>
+                                    <p>Taxa de Acertos</p>
+                                </div>
+                                <div class="metric-card">
+                                    <h3 id="classCardAvgTime">0 min</h3>
+                                    <p>Tempo Médio / Aula</p>
+                                </div>
+                            </div>
+
+                            <!-- Gráficos de Evolução e Bloom -->
+                            <div class="analytics-charts-grid">
+                                <div class="card chart-card">
+                                    <h4>📈 Evolução de Notas da Turma</h4>
+                                    <div class="chart-container" style="position: relative; height: 220px;">
+                                        <canvas id="classEvolutionsLineChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="card chart-card">
+                                    <h4>🧠 Desempenho Médio por Nível Bloom</h4>
+                                    <div class="chart-container" style="position: relative; height: 220px;">
+                                        <canvas id="classBloomBarsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Análise de Dificuldades de Conceitos -->
+                            <div class="card difficulties-card" style="margin-top: 20px;">
+                                <h4>⚠️ Mapeamento de Dificuldades e Lacunas Cognitivas</h4>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Tópico / Conceito</th>
+                                            <th>Nível Bloom</th>
+                                            <th>Erros Comuns Detectados</th>
+                                            <th>Taxa de Erro (%)</th>
+                                            <th>Intervenção Sugerida</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="classDifficultiesTableBody">
+                                        <!-- Injetado dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Análise Individual dos Alunos -->
+                            <div class="card student-analysis-card" style="margin-top: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h4>👨‍🎓 Acompanhamento Individual de Alunos</h4>
+                                    <button class="btn-secondary btn-sm" onclick="exportStudentsCSV()">📥 Exportar Planilha CSV</button>
+                                </div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Turma</th>
+                                            <th>Acertos/Média</th>
+                                            <th>Bloom Máximo</th>
+                                            <th>Tempo Médio</th>
+                                            <th>Engajamento IA</th>
+                                            <th>Status Pedagógico</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentAnalysisTableBody">
+                                        <!-- Injetado dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 3. MODO APRESENTAÇÃO (SALA DE AULA)
+                 ============================================== -->
+            <div id="viewPresentation" class="spa-view">
+                <div class="presentation-layout">
+                    <!-- Painel de Controle Superior (Projeção) -->
+                    <div class="presentation-header card">
+                        <div class="pres-controls">
+                            <div>
+                                <label for="presLessonSelect">Selecionar Aula para Projetar:</label>
+                                <select id="presLessonSelect" onchange="loadPresentationLesson()">
+                                    <!-- Injetado via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label for="presQuestionSelect">Pergunta Atual:</label>
+                                <select id="presQuestionSelect" onchange="showPresentationQuestion()">
+                                    <!-- Injetado via JS -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn-primary" onclick="changePresQuestion(-1)">⬅️ Anterior</button>
+                                <button class="btn-primary" onclick="changePresQuestion(1)">Próxima ➡️</button>
+                                <button class="btn-danger" onclick="toggleRevealWhoFailed()">🚨 Ver Quem Errou</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Central de Projeção -->
+                    <div class="presentation-body-grid">
+                        
+                        <!-- Coluna 1: Pergunta em Destaque -->
+                        <div class="pres-question-display card">
+                            <span class="pres-bloom-tag" id="presBloomTag">LEMBRAR</span>
+                            <span class="pres-difficulty-tag" id="presDiffTag">MÉDIO</span>
+                            
+                            <h2 class="pres-question-text" id="presQuestionText">Nenhuma aula selecionada para projeção no momento.</h2>
+                            
+                            <div class="pres-expected-box">
+                                <h5>Fórmula do Assunto:</h5>
+                                <code id="presFormulaCode">Nenhuma</code>
+                            </div>
+
+                            <div class="pres-error-alert" id="presCommonErrorBox">
+                                💡 <strong>Dificuldade Esperada/Erro Comum:</strong>
+                                <p id="presCommonErrorText">Erros comuns envolvem inversão de termos de aceleração e velocidade ou desconsiderar velocidade inicial.</p>
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Status das Respostas em Tempo Real -->
+                        <div class="pres-stats-display card">
+                            <h4>📊 Estatísticas da Pergunta Atual</h4>
+                            
+                            <div class="pres-chart-row">
+                                <div class="chart-container" style="position: relative; height: 180px; width: 100%;">
+                                    <canvas id="presStatsChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <h4 style="margin-top: 20px;">💬 Respostas Recentes da Turma</h4>
+                            <div class="pres-live-feed" id="presLiveFeedList">
+                                <!-- Injetado dinamicamente via localDB listener -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==============================================
+         MODAIS DO SISTEMA
+         ============================================== -->
+    
+    <!-- MODAL DE CONFIGURAÇÃO -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>⚙️ Configuração das Integrações</h3>
+                <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            
+            <h4 style="color: var(--accent-blue); margin-bottom: 10px;">Chave da API do Google Gemini</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
+                Coloque sua chave do Gemini para habilitar análises de IA em tempo real. Se deixar em branco, o sistema utilizará um motor estático de fallback baseado em heurísticas.
+            </p>
+            <div class="form-group">
+                <label for="cfgGeminiKey">Gemini API Key</label>
+                <input type="password" id="cfgGeminiKey" placeholder="AIzaSy...">
+            </div>
+            
+            <h4 style="color: var(--accent-purple); margin-top: 20px; margin-bottom: 10px;">Envio de Relatórios (EmailJS)</h4>
+            <div class="form-group">
+                <label for="cfgEmailJSKey">EmailJS Public Key</label>
+                <input type="text" id="cfgEmailJSKey" placeholder="Chave pública do EmailJS">
+            </div>
+            <div class="form-group">
+                <label for="cfgEmailJSService">EmailJS Service ID</label>
+                <input type="text" id="cfgEmailJSService" placeholder="service_xxxxx">
+            </div>
+            <div class="form-group">
+                <label for="cfgEmailJSTemplate">EmailJS Template ID</label>
+                <input type="text" id="cfgEmailJSTemplate" placeholder="template_xxxxx">
+            </div>
+            <div class="form-group">
+                <label for="cfgTeacherEmail">E-mail do Professor Destinatário</label>
+                <input type="email" id="cfgTeacherEmail" placeholder="professor@escola.com">
+            </div>
+            
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeModal('settingsModal')">Cancelar</button>
+                <button class="btn-primary" onclick="saveSettings()">Salvar Configurações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RELATÓRIO DO ALUNO DETALHADO -->
+    <div class="modal-overlay" id="studentReportModal">
+        <div class="modal-content" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>📋 Relatório de Desempenho do Estudante</h3>
+                <button class="close-btn" onclick="closeModal('studentReportModal')">&times;</button>
+            </div>
+            <div id="studentReportDetails">
+                <!-- Gerado dinamicamente no js/app.js -->
+            </div>
+            <div class="form-actions">
+                <button class="btn-secondary" id="btnSendReportEmail" onclick="sendReportEmail()">📧 Enviar por E-mail (EmailJS)</button>
+                <button class="btn-primary" onclick="closeModal('studentReportModal')">Fechar</button>
+            </div>
+            <p id="emailStatusText" style="margin-top: 10px; font-size: 0.85rem; text-align: center; color: var(--success);"></p>
+        </div>
+    </div>
+
+    <!-- MODAL ALERTA DE QUEM ERROU (MODO APRESENTAÇÃO) -->
+    <div class="modal-overlay" id="failedStudentsModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 style="color: var(--error)">🚨 Alunos com Dificuldade na Pergunta</h3>
+                <button class="close-btn" onclick="closeModal('failedStudentsModal')">&times;</button>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Os seguintes alunos erraram ou precisaram de muitas dicas nesta questão e podem necessitar de apoio individualizado:</p>
+            <ul class="failed-students-list" id="failedStudentsList">
+                <!-- Injetado dinamicamente -->
+            </ul>
+            <div class="form-actions">
+                <button class="btn-primary btn-block" onclick="closeModal('failedStudentsModal')">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/lesson.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/simulator.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
