@@ -588,6 +588,7 @@ function updateMultimediaResources(question) {
         document.getElementById('localMuvSimulator').style.display = 'block';
         document.getElementById('phetSimulatorEmbed').style.display = 'none';
         if (window.simulator) {
+            window.simulator.resize();
             window.simulator.reset();
         }
     } else {
@@ -672,7 +673,12 @@ function switchStudentTab(tabName) {
     document.getElementById('studentTabReport').classList.remove('active');
 
     // Exibir painel correto
-    if (tabName === 'multimedia') document.getElementById('studentTabMultimedia').classList.add('active');
+    if (tabName === 'multimedia') {
+        document.getElementById('studentTabMultimedia').classList.add('active');
+        if (activeMultimediaSubTab === 'simulator' && window.simulator) {
+            window.simulator.resize();
+        }
+    }
     if (tabName === 'gamification') {
         document.getElementById('studentTabGamification').classList.add('active');
         renderLeaderboard();
@@ -709,7 +715,12 @@ function switchMultimediaSubTab(subTabName) {
     document.getElementById('subTabExercises').classList.remove('active');
 
     // Exibir correto
-    if (subTabName === 'simulator') document.getElementById('subTabSimulator').classList.add('active');
+    if (subTabName === 'simulator') {
+        document.getElementById('subTabSimulator').classList.add('active');
+        if (window.simulator) {
+            window.simulator.resize();
+        }
+    }
     if (subTabName === 'video') document.getElementById('subTabVideo').classList.add('active');
     if (subTabName === 'theory') document.getElementById('subTabTheory').classList.add('active');
     if (subTabName === 'exercises') document.getElementById('subTabExercises').classList.add('active');
