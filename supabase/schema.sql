@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
     nome TEXT,
+    email TEXT,
     role TEXT DEFAULT 'aluno',
     turma TEXT DEFAULT 'Geral',
     status TEXT DEFAULT 'pendente',
@@ -168,15 +169,16 @@ CREATE POLICY "Alunos podem inserir suas análises" ON public.analise_bloom
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, nome, turma, role, status)
+    INSERT INTO public.profiles (id, nome, email, turma, role, status)
     VALUES (
         new.id,
         COALESCE(new.raw_user_meta_data->>'nome', 'Usuário'),
+        new.email,
         COALESCE(new.raw_user_meta_data->>'turma', 'Geral'),
         COALESCE(new.raw_user_meta_data->>'role', 'aluno'),
         CASE WHEN coalesce(new.raw_user_meta_data->>'role', 'aluno') = 'admin' THEN 'aprovado' ELSE 'pendente' END
     )
-    ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -2461,7 +2461,7 @@ async function loadPendingUsers() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${u.nome}</td>
-            <td>${u.id}</td>
+            <td>${u.email || u.id}</td>
             <td>${u.role}</td>
             <td>${u.turma || '-'}</td>
             <td>
