@@ -5,7 +5,7 @@
 // --- ESTADO GLOBAL DA APLICAÇÃO ---
 const supabaseUrl = 'https://cygrmkfmqzxxjtlnjhcv.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Z3Jta2ZtcXp4eGp0bG5qaGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MjAxODksImV4cCI6MjEwMjI5NjE4OX0.IuGMgtbI3cKoATadUlRDq22W3LrkoT2ysuE7uch0juY';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentView = 'student'; // student | professor | presentation
 let studentSession = null;  // Dados do aluno logado: { name, class, lesson, start, xp, level, badges }
@@ -105,9 +105,9 @@ function switchView(viewName) {
 // SUPABASE AUTH E LOGIN
 // =====================================================================
 
-supabase.auth.onAuthStateChange(async (event, session) => {
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
-        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        const { data: profile, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
         if (error) {
             console.error("Erro ao buscar perfil", error);
             return;
@@ -115,13 +115,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
         if (profile.status === 'pendente') {
             alert("⏳ Cadastro realizado! Seu acesso está aguardando a aprovação da coordenação.");
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             return;
         }
 
         if (profile.status === 'bloqueado') {
             alert("🚫 Acesso bloqueado. Entre em contato com a coordenação.");
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             return;
         }
 
@@ -147,7 +147,7 @@ async function handleLogin() {
     const password = document.getElementById('authPassword').value;
     if(!email || !password) return alert("Preencha e-mail e senha");
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if(error) alert("Erro no login: " + error.message);
 }
 
@@ -164,7 +164,7 @@ async function handleSignup() {
 
         if(!email || !password || !nome) return alert("Preencha todos os campos obrigatórios");
 
-        const { error } = await supabase.auth.signUp({
+        const { error } = await supabaseClient.auth.signUp({
             email,
             password,
             options: {
@@ -2426,7 +2426,7 @@ async function loadPendingUsers() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Carregando...</td></tr>';
     
     // Buscar usuários pendentes
-    const { data: users, error } = await supabase
+    const { data: users, error } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('status', 'pendente')
@@ -2460,7 +2460,7 @@ async function loadPendingUsers() {
 }
 
 async function approveUser(id) {
-    const { error } = await supabase.from('profiles').update({ status: 'aprovado' }).eq('id', id);
+    const { error } = await supabaseClient.from('profiles').update({ status: 'aprovado' }).eq('id', id);
     if (error) alert("Erro ao aprovar: " + error.message);
     else {
         alert("Usuário aprovado com sucesso!");
@@ -2470,7 +2470,7 @@ async function approveUser(id) {
 
 async function blockUser(id) {
     if(!confirm("Tem certeza que deseja bloquear este usuário?")) return;
-    const { error } = await supabase.from('profiles').update({ status: 'bloqueado' }).eq('id', id);
+    const { error } = await supabaseClient.from('profiles').update({ status: 'bloqueado' }).eq('id', id);
     if (error) alert("Erro ao bloquear: " + error.message);
     else {
         alert("Usuário bloqueado.");
