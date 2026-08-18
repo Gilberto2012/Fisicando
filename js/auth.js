@@ -9,10 +9,10 @@ class SupabaseAuth {
         this.initClient();
     }
 
-    // Inicializa o cliente Supabase a partir das chaves do localStorage ou variáveis
+    // Inicializa o cliente Supabase (BancoIa) com fallback para localStorage
     initClient() {
-        const url = localStorage.getItem('SUPABASE_URL') || '';
-        const anonKey = localStorage.getItem('SUPABASE_ANON_KEY') || '';
+        const url = localStorage.getItem('SUPABASE_URL') || 'https://cygrmkfmqzxxjtlnjhcv.supabase.co';
+        const anonKey = localStorage.getItem('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Z3Jta2ZtcXp4eGp0bG5qaGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MjAxODksImV4cCI6MjEwMjI5NjE4OX0.IuGMgtbI3cKoATadUlRDq22W3LrkoT2ysuE7uch0juY';
         
         if (url && anonKey) {
             try {
@@ -23,7 +23,7 @@ class SupabaseAuth {
                 this.supabase = null;
             }
         } else {
-            console.warn("Chaves do Supabase não configuradas no localStorage.");
+            console.warn("Chaves do Supabase não configuradas.");
         }
     }
 
