@@ -1996,3 +1996,8 @@ iframe#phetIframe {
         gap: 10px;
     }
 }
+
+/* Moderação - Tabela */
+.table-styled { width: 100%; border-collapse: collapse; }
+.table-styled th, .table-styled td { padding: 12px; border-bottom: 1px solid var(--panel-border); }
+.table-styled th { background: rgba(0,0,0,0.2); font-weight: 600; color: var(--text-secondary); }

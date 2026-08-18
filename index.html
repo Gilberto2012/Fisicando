@@ -16,6 +16,7 @@
     <!-- Bibliotecas externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Estilos -->
     <link rel="stylesheet" href="css/styles.css">
@@ -62,38 +63,65 @@
 
                 <!-- 1.1 Tela de Login/Apresentação -->
                 <div id="studentLoginCard" class="card login-card">
-                    <h2>Bem-vindo à Aula de Física</h2>
-                    <p class="login-sub">Digite seu nome e escolha sua turma para iniciar a jornada científica.</p>
+                    <h2>Bem-vindo ao PhysEdu</h2>
+                    <p class="login-sub">Autentique-se para acessar suas aulas e relatórios.</p>
 
-                    <div class="form-group">
-                        <label for="studentNameInput">Nome do Aluno</label>
-                        <input type="text" id="studentNameInput" placeholder="Ex: Arthur Silva">
-                    </div>
-                    <div class="form-group">
-                        <label for="studentClassSelect">Selecione sua Turma</label>
-                        <select id="studentClassSelect">
-                            <option value="1ºA">1º Ano A</option>
-                            <option value="1ºB">1º Ano B</option>
-                            <option value="2ºA">2º Ano A</option>
-                            <option value="2ºB">2º Ano B</option>
-                            <option value="3ºA">3º Ano A</option>
-                            <option value="3ºB">3º Ano B</option>
-                        </select>
+                    <!-- Abas de Auth -->
+                    <div class="auth-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button class="btn-primary" id="tabLogin" onclick="toggleAuthMode('login')" style="flex:1">Login</button>
+                        <button class="btn-secondary" id="tabSignup" onclick="toggleAuthMode('signup')" style="flex:1">Cadastro</button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="studentLessonCodeInput">Código da Aula (Opcional)</label>
-                        <input type="text" id="studentLessonCodeInput"
-                            placeholder="Ex: CINEMA1 (Deixe em branco para aula padrão)">
+                    <!-- Formulário de Login -->
+                    <div id="loginForm">
+                        <div class="form-group">
+                            <label for="authEmail">E-mail</label>
+                            <input type="email" id="authEmail" placeholder="seu@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="authPassword">Senha</label>
+                            <input type="password" id="authPassword" placeholder="******">
+                        </div>
+                        <button class="btn-success btn-block" onclick="handleLogin()">Entrar</button>
                     </div>
 
-                    <button class="btn-primary btn-block" id="btnStartLesson" onclick="startStudentSession()">Iniciar
-                        Aula</button>
+                    <!-- Formulário de Cadastro -->
+                    <div id="signupForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="signupName">Nome Completo</label>
+                            <input type="text" id="signupName" placeholder="Ex: Arthur Silva">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupRole">Tipo de Conta</label>
+                            <select id="signupRole" onchange="toggleSignupRole()">
+                                <option value="aluno">Aluno</option>
+                                <option value="professor">Professor</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="signupTurmaGroup">
+                            <label for="signupClass">Sua Turma</label>
+                            <select id="signupClass">
+                                <option value="1ºA">1º Ano A</option>
+                                <option value="1ºB">1º Ano B</option>
+                                <option value="2ºA">2º Ano A</option>
+                                <option value="2ºB">2º Ano B</option>
+                                <option value="3ºA">3º Ano A</option>
+                                <option value="3ºB">3º Ano B</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="signupEmail">E-mail</label>
+                            <input type="email" id="signupEmail" placeholder="seu@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupPassword">Senha (mín. 6 caracteres)</label>
+                            <input type="password" id="signupPassword" placeholder="******">
+                        </div>
+                        <button class="btn-success btn-block" onclick="handleSignup()">Criar Conta</button>
+                    </div>
 
-                    <div class="disclaimer-alert">
-                        ⚠️ <strong>Aviso:</strong> Este sistema substitui o uso direto de ferramentas como ChatGPT.
-                        Todas as interações (perguntas, respostas e tempos) são gravadas para análise pedagógica do
-                        professor.
+                    <div class="disclaimer-alert" style="margin-top: 20px;">
+                        ⚠️ <strong>Aviso:</strong> Novos cadastros passam por aprovação da coordenação antes do acesso.
                     </div>
                 </div>
 
@@ -384,11 +412,37 @@
                                 onclick="switchProfessorTab('lessons')">📝 Criação de Aula</button>
                             <button class="prof-nav-btn" id="btnProfTabAnalytics"
                                 onclick="switchProfessorTab('analytics')">📊 Relatórios e Análises</button>
+                            <button class="prof-nav-btn" id="btnProfTabModeration"
+                                onclick="switchProfessorTab('moderation')">🛡️ Moderação</button>
                         </nav>
                     </aside>
 
                     <!-- Área de Conteúdo do Professor -->
                     <section class="professor-content-area">
+
+                        <!-- ABA: MODERAÇÃO -->
+                        <div id="profTabModeration" class="prof-tab-panel">
+                            <div class="lesson-creation-header">
+                                <h2>Moderação de Usuários</h2>
+                                <p>Aprove ou rejeite novos cadastros de alunos e professores pendentes.</p>
+                            </div>
+                            <div class="card" style="margin-top: 20px;">
+                                <table class="table-styled" style="width: 100%; text-align: left;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>E-mail</th>
+                                            <th>Cargo</th>
+                                            <th>Turma</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingUsersTableBody">
+                                        <tr><td colspan="5" style="text-align: center;">Carregando usuários...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
                         <!-- ABA A: CRIAÇÃO DE AULAS (4 MODOS) -->
                         <div id="profTabLessons" class="prof-tab-panel active">
