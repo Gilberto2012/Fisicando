@@ -152,24 +152,32 @@ async function handleLogin() {
 }
 
 async function handleSignup() {
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-    const nome = document.getElementById('signupName').value;
-    const role = document.getElementById('signupRole').value;
-    const turma = role === 'aluno' ? document.getElementById('signupClass').value : 'N/A';
+    try {
+        console.log("handleSignup disparado!");
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+        const nome = document.getElementById('signupName').value;
+        const role = document.getElementById('signupRole').value;
+        const turma = role === 'aluno' ? document.getElementById('signupClass').value : 'N/A';
 
-    if(!email || !password || !nome) return alert("Preencha todos os campos obrigatórios");
+        console.log("Valores coletados:", email, role, nome);
 
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: { nome, role, turma }
-        }
-    });
+        if(!email || !password || !nome) return alert("Preencha todos os campos obrigatórios");
 
-    if(error) alert("Erro no cadastro: " + error.message);
-    else alert("Cadastro efetuado! Aguarde a aprovação.");
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { nome, role, turma }
+            }
+        });
+
+        if(error) alert("Erro no cadastro: " + error.message);
+        else alert("Cadastro efetuado! Aguarde a aprovação da coordenação.");
+    } catch (err) {
+        console.error(err);
+        alert("Erro inesperado ao cadastrar: " + err.message);
+    }
 }
 
 function toggleAuthMode(mode) {
