@@ -98,13 +98,13 @@ $$;
 -- Políticas para Perfis
 CREATE POLICY "Docentes aprovados visualizam todos os perfis" ON public.profiles
     FOR SELECT USING (
-        (auth.jwt() -> 'user_metadata' ->> 'role' IN ('professor', 'admin'))
+        (public.get_user_role(auth.uid()) IN ('professor', 'admin') AND public.get_user_status(auth.uid()) = 'aprovado')
         OR auth.uid() = id
     );
 
 CREATE POLICY "Docentes aprovados atualizam status de usuários" ON public.profiles
     FOR UPDATE USING (
-        (auth.jwt() -> 'user_metadata' ->> 'role' IN ('professor', 'admin'))
+        (public.get_user_role(auth.uid()) IN ('professor', 'admin') AND public.get_user_status(auth.uid()) = 'aprovado')
         OR auth.uid() = id
     );
 
