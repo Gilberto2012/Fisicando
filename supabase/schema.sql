@@ -130,8 +130,15 @@ CREATE POLICY "Alunos podem inserir suas análises" ON public.analise_bloom
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.perfis_alunos (id, nome_completo)
-    VALUES (new.id, COALESCE(new.raw_user_meta_data->>'nome_completo', new.email));
+    INSERT INTO public.profiles (id, nome, turma, role, status)
+    VALUES (
+        new.id,
+        COALESCE(new.raw_user_meta_data->>'nome', 'Usuário'),
+        COALESCE(new.raw_user_meta_data->>'turma', 'Geral'),
+        COALESCE(new.raw_user_meta_data->>'role', 'aluno'),
+        CASE WHEN coalesce(new.raw_user_meta_data->>'role', 'aluno') = 'admin' THEN 'aprovado' ELSE 'pendente' END
+    )
+    ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
