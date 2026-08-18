@@ -582,7 +582,7 @@ function updateMultimediaResources(question) {
     };
 
     // Determinar qual simulador usar (se for MUV ou MRU específico, podemos usar o canvas local)
-    const isMuvLocal = question.tags.includes("MUV") || question.tags.includes("MRU");
+    const isMuvLocal = question.tags && (question.tags.includes("MUV") || question.tags.includes("MRU"));
     
     if (isMuvLocal) {
         document.getElementById('localMuvSimulator').style.display = 'block';
@@ -598,7 +598,7 @@ function updateMultimediaResources(question) {
         // Mapear tópico correspondente
         let mappedTopic = "Cinemática";
         for (let key in phetUrls) {
-            if (question.tags.some(t => t.toLowerCase().includes(key.toLowerCase()))) {
+            if (question.tags && question.tags.some(t => t.toLowerCase().includes(key.toLowerCase()))) {
                 mappedTopic = key;
                 break;
             }
@@ -609,7 +609,7 @@ function updateMultimediaResources(question) {
     // Atualizar Vídeo do Youtube
     let mappedVideoTopic = "Cinemática";
     for (let key in youtubeCodes) {
-        if (question.tags.some(t => t.toLowerCase().includes(key.toLowerCase()))) {
+        if (question.tags && question.tags.some(t => t.toLowerCase().includes(key.toLowerCase()))) {
             mappedVideoTopic = key;
             break;
         }
@@ -619,13 +619,13 @@ function updateMultimediaResources(question) {
 
     // Atualizar Texto do Resumo Teórico
     document.getElementById('theoryTextContent').innerHTML = `
-        <h3>Conceito: ${question.tags.join(" / ")}</h3>
+        <h3>Conceito: ${question.tags ? question.tags.join(" / ") : "Geral"}</h3>
         <p style="margin-top: 10px;">${question.explicacao}</p>
         ${question.formula ? `<div class="pres-expected-box" style="margin-top: 15px;"><h5>Fórmula Associada:</h5><code>${question.formula}</code></div>` : ""}
     `;
 
     // Atualizar Exercícios Extras
-    const relatedQuestions = PHYSICS_QUESTION_BANK.filter(q => q.id !== question.id && q.tags.some(t => question.tags.includes(t))).slice(0, 2);
+    const relatedQuestions = PHYSICS_QUESTION_BANK.filter(q => q.id !== question.id && q.tags && question.tags && q.tags.some(t => question.tags.includes(t))).slice(0, 2);
     const exercisesContainer = document.getElementById('extraExercisesContent');
     exercisesContainer.innerHTML = '';
     
