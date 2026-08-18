@@ -573,12 +573,12 @@ function updateMultimediaResources(question) {
 
     // Mapeamentos de vídeos do YouTube explicativos por Tópico
     const youtubeCodes = {
-        "Cinemática": "8w4017oQjoc", // Cinemática introdução
-        "Leis de Newton": "p7T1n_61T7Y",
-        "Termodinâmica": "5qZ1L4k8Ksw",
-        "Ondulatória": "Gz3GqfI8t0s",
-        "Óptica": "bJz6b5e8GOM",
-        "Eletricidade": "6K_Z87R346g"
+        "Cinemática": "kbaN17Z41ZM", // Cinemática introdução
+        "Leis de Newton": "W9fnE9NdFzo",
+        "Termodinâmica": "GYxXCr6HXcw",
+        "Ondulatória": "Rmgqv8ETn6o",
+        "Óptica": "ObDG87IPzFE",
+        "Eletricidade": "BMrIHgI0PlU"
     };
 
     // Determinar qual simulador usar (se for MUV ou MRU específico, podemos usar o canvas local)
