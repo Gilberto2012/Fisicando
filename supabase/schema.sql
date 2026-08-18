@@ -6,20 +6,23 @@
 -- Habilitar a extensão para geração de UUID se necessário
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. Tabela de Perfis de Alunos (vinculada ao Supabase Auth)
-CREATE TABLE IF NOT EXISTS public.perfis_alunos (
+-- 1. Tabela de Perfis de Usuários (vinculada ao Supabase Auth)
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
-    nome_completo TEXT,
-    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    nome TEXT,
+    role TEXT DEFAULT 'aluno',
+    turma TEXT DEFAULT 'Geral',
+    status TEXT DEFAULT 'pendente',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Habilitar RLS (Row Level Security) para Perfis
-ALTER TABLE public.perfis_alunos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- 2. Tabela de Sessões de Aula
 CREATE TABLE IF NOT EXISTS public.sessoes_aula (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    aluno_id UUID REFERENCES public.perfis_alunos(id) ON DELETE CASCADE NOT NULL,
+    aluno_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     data_inicio TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     data_fim TIMESTAMP WITH TIME ZONE,
     progresso INTEGER DEFAULT 0 NOT NULL
@@ -61,19 +64,42 @@ CREATE TABLE IF NOT EXISTS public.analise_bloom (
 ALTER TABLE public.analise_bloom ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================================
+-- FUNÇÃO DE SEGURANÇA (SECURITY DEFINER)
+-- Evita a recursão infinita ao checar RLS na tabela profiles
+-- =====================================================================
+CREATE OR REPLACE FUNCTION public.is_teacher_or_admin()
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  has_access boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() 
+    AND role IN ('professor', 'admin') 
+    AND status = 'aprovado'
+  ) INTO has_access;
+  RETURN has_access;
+END;
+$$;
+
+-- =====================================================================
 -- POLÍTICAS DE SEGURANÇA (ROW LEVEL SECURITY)
--- Isso garante que os alunos só acessem seus próprios dados
 -- =====================================================================
 
--- Políticas para Perfis de Alunos
-CREATE POLICY "Alunos podem visualizar seus próprios perfis" ON public.perfis_alunos
+-- Políticas para Perfis
+CREATE POLICY "Docentes aprovados visualizam todos os perfis" ON public.profiles
+    FOR SELECT USING (public.is_teacher_or_admin() OR auth.uid() = id);
+
+CREATE POLICY "Docentes aprovados atualizam status de usuários" ON public.profiles
+    FOR UPDATE USING (public.is_teacher_or_admin() OR auth.uid() = id);
+
+CREATE POLICY "Usuários leem próprio perfil" ON public.profiles
     FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Alunos podem inserir seus próprios perfis" ON public.perfis_alunos
+CREATE POLICY "Usuários inserem próprio perfil" ON public.profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Alunos podem atualizar seus próprios perfis" ON public.perfis_alunos
-    FOR UPDATE USING (auth.uid() = id);
 
 -- Políticas para Sessões de Aula
 CREATE POLICY "Alunos podem visualizar suas próprias sessões" ON public.sessoes_aula
@@ -125,7 +151,6 @@ CREATE POLICY "Alunos podem inserir suas análises" ON public.analise_bloom
 
 -- =====================================================================
 -- TRIGGER PARA ATUALIZAR PERFIS DE FORMA AUTOMÁTICA
--- Quando um usuário se registra na tabela auth.users, cria o perfil correspondente
 -- =====================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
