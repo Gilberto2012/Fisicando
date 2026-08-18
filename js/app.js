@@ -130,6 +130,7 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
             setupStudentSession(profile);
         } else if (profile.role === 'professor' || profile.role === 'admin') {
             setupProfessorSession(profile);
+            setupStudentSession(profile, true); // Professores e admins também ganham acesso à área do aluno para testes, mas sem mudar a tela na hora do login
             if (profile.role === 'admin') {
                 document.getElementById('btnProfTabModeration').style.display = 'block';
             }
@@ -213,7 +214,7 @@ function toggleSignupRole() {
     document.getElementById('signupTurmaGroup').style.display = role === 'aluno' ? 'block' : 'none';
 }
 
-function setupStudentSession(profile) {
+function setupStudentSession(profile, skipViewSwitch = false) {
     studentSession = {
         id: profile.id,
         name: profile.nome,
@@ -240,7 +241,10 @@ function setupStudentSession(profile) {
     document.getElementById('studentNameDisplay').textContent = studentSession.name + ` (${studentSession.class})`;
     document.getElementById('studentLoginCard').style.display = 'none';
     document.getElementById('studentWorkspace').style.display = 'grid';
-    switchView('student');
+    
+    if (!skipViewSwitch) {
+        switchView('student');
+    }
 
     initStudentChat();
     updateLessonProgressBar();
