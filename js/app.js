@@ -134,13 +134,23 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 document.getElementById('btnProfTabModeration').style.display = 'block';
             }
         }
+        
+        // Mostrar botão de logout
+        document.getElementById('btnLogout').style.display = 'inline-block';
+        
     } else if (event === 'SIGNED_OUT') {
         studentSession = null;
         document.getElementById('studentWorkspace').style.display = 'none';
         document.getElementById('studentLoginCard').style.display = 'block';
+        document.getElementById('btnLogout').style.display = 'none';
         switchView('student');
     }
 });
+
+async function logoutApp() {
+    await supabaseClient.auth.signOut();
+    window.location.reload();
+}
 
 async function handleLogin() {
     const email = document.getElementById('authEmail').value;
