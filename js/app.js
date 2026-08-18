@@ -559,7 +559,7 @@ function renderLeaderboard() {
 // =====================================================================
 function updateMultimediaResources(question) {
     // 1. Alternar visualizadores de acordo com o tópico
-    const topic = question.tags[0] || activeLesson.topic;
+    const topic = (question.tags && question.tags[0]) || activeLesson.topic;
     
     // Mapeamentos de links de PhET iframe por Tópico de Física
     const phetUrls = {
