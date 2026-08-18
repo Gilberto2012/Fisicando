@@ -67,20 +67,27 @@ ALTER TABLE public.analise_bloom ENABLE ROW LEVEL SECURITY;
 -- FUNÇÃO DE SEGURANÇA (SECURITY DEFINER)
 -- Evita a recursão infinita ao checar RLS na tabela profiles
 -- =====================================================================
-CREATE OR REPLACE FUNCTION public.is_teacher_or_admin()
-RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+CREATE OR REPLACE FUNCTION public.get_user_role(user_id uuid)
+RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
-  has_access boolean;
+  retval text;
 BEGIN
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = auth.uid() 
-    AND role IN ('professor', 'admin') 
-    AND status = 'aprovado'
-  ) INTO has_access;
-  RETURN has_access;
+  SELECT role INTO retval FROM public.profiles WHERE id = user_id;
+  RETURN retval;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_user_status(user_id uuid)
+RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  retval text;
+BEGIN
+  SELECT status INTO retval FROM public.profiles WHERE id = user_id;
+  RETURN retval;
 END;
 $$;
 
@@ -90,10 +97,16 @@ $$;
 
 -- Políticas para Perfis
 CREATE POLICY "Docentes aprovados visualizam todos os perfis" ON public.profiles
-    FOR SELECT USING (public.is_teacher_or_admin() OR auth.uid() = id);
+    FOR SELECT USING (
+        (auth.jwt() -> 'user_metadata' ->> 'role' IN ('professor', 'admin'))
+        OR auth.uid() = id
+    );
 
 CREATE POLICY "Docentes aprovados atualizam status de usuários" ON public.profiles
-    FOR UPDATE USING (public.is_teacher_or_admin() OR auth.uid() = id);
+    FOR UPDATE USING (
+        (auth.jwt() -> 'user_metadata' ->> 'role' IN ('professor', 'admin'))
+        OR auth.uid() = id
+    );
 
 CREATE POLICY "Usuários leem próprio perfil" ON public.profiles
     FOR SELECT USING (auth.uid() = id);
