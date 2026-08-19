@@ -7,7 +7,7 @@ async function callGeminiAPI(apiKey, studentName, question, studentAnswer, class
     const requestBody = {
         contents: [{
             parts: [{
-                text: \`Você é um Tutor de Física Virtual de Ensino Médio, auxiliando o(a) aluno(a) ${studentName}.
+                text: `Você é um Tutor de Física Virtual de Ensino Médio, auxiliando o(a) aluno(a) ${studentName}.
 Persona ativa: "${persona}".
 INSTRUÇÕES DA SUA PERSONA (MANDATÓRIO): "${classPrompt}"
 
@@ -32,7 +32,7 @@ Responda APENAS no seguinte formato, substituindo os colchetes pelo seu conteúd
 [Número decimal de 0.0 a 10.0 representando a precisão física e adequação da resposta do aluno]
 
 ---SIMULATOR---
-[OPCIONAL: Apenas se você quiser alterar o cenário atual do simulador para exemplificar sua explicação, envie um JSON neste formato exato (sem texto a mais): {"v0": 20, "a": -5, "x0": 0}. Senão, omita a tag ---SIMULATOR---]\`
+[OPCIONAL: Apenas se você quiser alterar o cenário atual do simulador para exemplificar sua explicação, envie um JSON neste formato exato (sem texto a mais): {"v0": 20, "a": -5, "x0": 0}. Senão, omita a tag ---SIMULATOR---]`
             }]
         }]
     };
