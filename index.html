@@ -28,7 +28,7 @@
         <header class="app-header">
             <div class="logo-section">
                 <h1 id="appLogo">🌌 PhysEdu <span id="appLogoSub">FÍSICA</span></h1>
-                <p id="appSubtitle">Aprendizado Inteligente e Dashboard Pedagógico de Bloom</p>
+                <p id="appSubtitle">Aprendizado Inteligente e Dashboard Pedagógico de Bloom teoria</p>
             </div>
 
             <!-- Controle de Visão/Role -->
@@ -50,7 +50,8 @@
                 <button class="btn-secondary" id="btnOpenSettings" onclick="openModal('settingsModal')">
                     ⚙️ Configurar
                 </button>
-                <button class="btn-danger" id="btnLogout" onclick="logoutApp()" style="display: none; padding: 0.5rem 1rem;">
+                <button class="btn-danger" id="btnLogout" onclick="logoutApp()"
+                    style="display: none; padding: 0.5rem 1rem;">
                     Sair
                 </button>
             </div>
@@ -71,8 +72,10 @@
 
                     <!-- Abas de Auth -->
                     <div class="auth-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button class="btn-primary" id="tabLogin" onclick="toggleAuthMode('login')" style="flex:1">Login</button>
-                        <button class="btn-secondary" id="tabSignup" onclick="toggleAuthMode('signup')" style="flex:1">Cadastro</button>
+                        <button class="btn-primary" id="tabLogin" onclick="toggleAuthMode('login')"
+                            style="flex:1">Login</button>
+                        <button class="btn-secondary" id="tabSignup" onclick="toggleAuthMode('signup')"
+                            style="flex:1">Cadastro</button>
                     </div>
 
                     <!-- Formulário de Login -->
@@ -444,7 +447,9 @@
                                         </tr>
                                     </thead>
                                     <tbody id="pendingUsersTableBody">
-                                        <tr><td colspan="5" style="text-align: center;">Carregando usuários...</td></tr>
+                                        <tr>
+                                            <td colspan="5" style="text-align: center;">Carregando usuários...</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -780,7 +785,7 @@
                                     Aula Selecionada: <strong id="assignLessonCodeDisplay"></strong>
                                 </p>
                                 <input type="hidden" id="assignLessonIdInput">
-                                
+
                                 <div class="form-group">
                                     <label for="assignClassSelect">Selecione a Turma:</label>
                                     <select id="assignClassSelect" onchange="loadStudentsForAssignment()">
@@ -802,10 +807,11 @@
                                         <!-- Preenchido dinamicamente via JS -->
                                     </select>
                                 </div>
-                                
+
                                 <div class="form-actions" style="margin-top: 20px;">
                                     <button class="btn-secondary" onclick="closeAssignModal()">Cancelar</button>
-                                    <button class="btn-success" onclick="confirmAssignLesson()">Confirmar Atribuição</button>
+                                    <button class="btn-success" onclick="confirmAssignLesson()">Confirmar
+                                        Atribuição</button>
                                 </div>
                             </div>
                         </div>
@@ -817,19 +823,22 @@
                             </div>
                             <div class="card" style="max-width: 600px; margin: 0 auto; padding: 30px;">
                                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                                    Selecione uma aula disponível, escolha a turma e, opcionalmente, um aluno específico para vinculá-lo à aula.
+                                    Selecione uma aula disponível, escolha a turma e, opcionalmente, um aluno específico
+                                    para vinculá-lo à aula.
                                 </p>
-                                
+
                                 <div class="form-group">
                                     <label for="assignPanelLessonSelect">1. Selecione a Aula:</label>
-                                    <select id="assignPanelLessonSelect" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                    <select id="assignPanelLessonSelect"
+                                        style="width: 100%; padding: 10px; border-radius: 8px;">
                                         <option value="">Carregando aulas...</option>
                                     </select>
                                 </div>
-                                
+
                                 <div class="form-group">
                                     <label for="assignPanelClassSelect">2. Selecione a Turma:</label>
-                                    <select id="assignPanelClassSelect" onchange="loadStudentsForPanelAssignment()" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                    <select id="assignPanelClassSelect" onchange="loadStudentsForPanelAssignment()"
+                                        style="width: 100%; padding: 10px; border-radius: 8px;">
                                         <option value="">-- Selecione uma Turma --</option>
                                         <option value="1ºA">1º Ano A</option>
                                         <option value="1ºB">1º Ano B</option>
@@ -843,12 +852,14 @@
 
                                 <div class="form-group" id="assignPanelStudentGroup" style="display: none;">
                                     <label for="assignPanelStudentSelect">3. Selecione o Aluno:</label>
-                                    <select id="assignPanelStudentSelect" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                    <select id="assignPanelStudentSelect"
+                                        style="width: 100%; padding: 10px; border-radius: 8px;">
                                         <option value="todos">Todos da Turma</option>
                                     </select>
                                 </div>
-                                
-                                <button class="btn-success btn-block" style="margin-top: 25px;" onclick="confirmPanelAssignLesson()">Salvar Atribuição</button>
+
+                                <button class="btn-success btn-block" style="margin-top: 25px;"
+                                    onclick="confirmPanelAssignLesson()">Salvar Atribuição</button>
                             </div>
                         </div>
 
