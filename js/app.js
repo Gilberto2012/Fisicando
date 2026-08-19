@@ -2559,9 +2559,10 @@ function switchProfessorTab(tabId) {
     activeProfessorTab = tabId;
     document.querySelectorAll('.prof-nav-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.prof-tab-panel').forEach(panel => panel.classList.remove('active'));
-
+    
     const btnIdMap = {
         'lessons': 'btnProfTabLessons',
+        'assign': 'btnProfTabAssign',
         'analytics': 'btnProfTabAnalytics',
         'moderation': 'btnProfTabModeration'
     };
@@ -2572,6 +2573,7 @@ function switchProfessorTab(tabId) {
     }
 
     let panelId = 'profTabLessons';
+    if (tabId === 'assign') panelId = 'profTabAssign';
     if (tabId === 'analytics') panelId = 'profTabAnalytics';
     if (tabId === 'moderation') panelId = 'profTabModeration';
     
@@ -2581,6 +2583,122 @@ function switchProfessorTab(tabId) {
     if (tabId === 'moderation') {
         loadPendingUsers();
     }
+    if (tabId === 'assign') {
+        loadAssignPanelLessons();
+    }
+}
+
+async function loadAssignPanelLessons() {
+    const lessonSelect = document.getElementById('assignPanelLessonSelect');
+    if (!lessonSelect) return;
+    
+    lessonSelect.innerHTML = '<option value="">Carregando...</option>';
+
+    const { data: lessons, error } = await supabaseClient
+        .from('aulas')
+        .select('id, title, code')
+        .eq('professor_id', professorSession.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        lessonSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        return;
+    }
+
+    if (!lessons || lessons.length === 0) {
+        lessonSelect.innerHTML = '<option value="">Nenhuma aula criada. Crie uma primeira.</option>';
+        return;
+    }
+
+    lessonSelect.innerHTML = '<option value="">-- Escolha a Aula --</option>';
+    lessons.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.id;
+        opt.textContent = `${l.title} (${l.code})`;
+        lessonSelect.appendChild(opt);
+    });
+}
+
+async function loadStudentsForPanelAssignment() {
+    const turma = document.getElementById('assignPanelClassSelect').value;
+    const studentGroup = document.getElementById('assignPanelStudentGroup');
+    const studentSelect = document.getElementById('assignPanelStudentSelect');
+    
+    if (!turma) {
+        studentGroup.style.display = 'none';
+        return;
+    }
+
+    studentSelect.innerHTML = '<option value="todos">Carregando...</option>';
+    studentGroup.style.display = 'block';
+
+    const { data: students, error } = await supabaseClient
+        .from('profiles')
+        .select('id, nome')
+        .eq('role', 'aluno')
+        .eq('turma', turma)
+        .order('nome', { ascending: true });
+
+    if (error) {
+        studentSelect.innerHTML = '<option value="todos">Erro ao carregar alunos</option>';
+        return;
+    }
+
+    studentSelect.innerHTML = '<option value="todos">Todos da Turma</option>';
+    
+    if (students && students.length > 0) {
+        students.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.nome;
+            studentSelect.appendChild(opt);
+        });
+    } else {
+        const opt = document.createElement('option');
+        opt.value = "todos";
+        opt.textContent = "Nenhum aluno cadastrado nesta turma";
+        studentSelect.appendChild(opt);
+    }
+}
+
+async function confirmPanelAssignLesson() {
+    const aulaId = document.getElementById('assignPanelLessonSelect').value;
+    const turma = document.getElementById('assignPanelClassSelect').value;
+    const alunoId = document.getElementById('assignPanelStudentSelect').value;
+
+    if (!aulaId) return alert("Selecione uma aula.");
+    if (!turma) return alert("Selecione uma turma.");
+
+    let insertData = {
+        aula_id: aulaId,
+        atribuido_por: professorSession.id
+    };
+
+    if (alunoId === 'todos') {
+        insertData.turma = turma;
+    } else {
+        insertData.aluno_id = alunoId;
+        insertData.turma = turma;
+    }
+
+    const { error } = await supabaseClient.from('aulas_atribuidas').insert([insertData]);
+
+    if (error) {
+        alert("Erro ao atribuir aula: " + error.message);
+        return;
+    }
+
+    if (alunoId === 'todos') {
+        alert(`Aula atribuída com sucesso para toda a turma ${turma}!`);
+    } else {
+        const nomeAluno = document.getElementById('assignPanelStudentSelect').options[document.getElementById('assignPanelStudentSelect').selectedIndex].text;
+        alert(`Aula atribuída com sucesso para o aluno ${nomeAluno} (${turma})!`);
+    }
+
+    // Reset fields
+    document.getElementById('assignPanelLessonSelect').value = '';
+    document.getElementById('assignPanelClassSelect').value = '';
+    document.getElementById('assignPanelStudentGroup').style.display = 'none';
 }
 
 async function loadPendingUsers() {

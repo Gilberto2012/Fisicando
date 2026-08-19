@@ -414,6 +414,8 @@
                         <nav class="professor-nav">
                             <button class="prof-nav-btn active" id="btnProfTabLessons"
                                 onclick="switchProfessorTab('lessons')">📝 Criação de Aula</button>
+                            <button class="prof-nav-btn" id="btnProfTabAssign"
+                                onclick="switchProfessorTab('assign')">Atribuir Aula</button>
                             <button class="prof-nav-btn" id="btnProfTabAnalytics"
                                 onclick="switchProfessorTab('analytics')">📊 Relatórios e Análises</button>
                             <button class="prof-nav-btn" id="btnProfTabModeration"
@@ -808,7 +810,49 @@
                             </div>
                         </div>
 
-                        <!-- ABA B: RELATÓRIOS E ANALÍTICAS -->
+                        <!-- ABA B: ATRIBUIR AULA -->
+                        <div id="profTabAssign" class="prof-tab-panel">
+                            <div class="analytics-header">
+                                <h2>🔗 Atribuir Aula a Alunos ou Turmas</h2>
+                            </div>
+                            <div class="card" style="max-width: 600px; margin: 0 auto; padding: 30px;">
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                    Selecione uma aula disponível, escolha a turma e, opcionalmente, um aluno específico para vinculá-lo à aula.
+                                </p>
+                                
+                                <div class="form-group">
+                                    <label for="assignPanelLessonSelect">1. Selecione a Aula:</label>
+                                    <select id="assignPanelLessonSelect" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                        <option value="">Carregando aulas...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="assignPanelClassSelect">2. Selecione a Turma:</label>
+                                    <select id="assignPanelClassSelect" onchange="loadStudentsForPanelAssignment()" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                        <option value="">-- Selecione uma Turma --</option>
+                                        <option value="1ºA">1º Ano A</option>
+                                        <option value="1ºB">1º Ano B</option>
+                                        <option value="2ºA">2º Ano A</option>
+                                        <option value="2ºB">2º Ano B</option>
+                                        <option value="3ºA">3º Ano A</option>
+                                        <option value="3ºB">3º Ano B</option>
+                                        <option value="Geral">Geral</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="assignPanelStudentGroup" style="display: none;">
+                                    <label for="assignPanelStudentSelect">3. Selecione o Aluno:</label>
+                                    <select id="assignPanelStudentSelect" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                        <option value="todos">Todos da Turma</option>
+                                    </select>
+                                </div>
+                                
+                                <button class="btn-success btn-block" style="margin-top: 25px;" onclick="confirmPanelAssignLesson()">Salvar Atribuição</button>
+                            </div>
+                        </div>
+
+                        <!-- ABA C: RELATÓRIOS E ANALÍTICAS -->
                         <div id="profTabAnalytics" class="prof-tab-panel">
                             <div class="analytics-header">
                                 <div
