@@ -760,12 +760,51 @@
                                             <th>Tópico</th>
                                             <th>Série</th>
                                             <th>Questões</th>
+                                            <th>Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody id="createdLessonsTableBody">
                                         <!-- Injetado dinamicamente -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- MODAL DE ATRIBUIÇÃO DE AULA -->
+                        <div id="assignLessonModal" class="modal-overlay" style="display: none; z-index: 10000;">
+                            <div class="modal-content" style="max-width: 400px;">
+                                <h3>🔗 Atribuir Aula</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+                                    Aula Selecionada: <strong id="assignLessonCodeDisplay"></strong>
+                                </p>
+                                <input type="hidden" id="assignLessonIdInput">
+                                
+                                <div class="form-group">
+                                    <label for="assignClassSelect">Selecione a Turma:</label>
+                                    <select id="assignClassSelect" onchange="loadStudentsForAssignment()">
+                                        <option value="">-- Selecione uma Turma --</option>
+                                        <option value="1ºA">1º Ano A</option>
+                                        <option value="1ºB">1º Ano B</option>
+                                        <option value="2ºA">2º Ano A</option>
+                                        <option value="2ºB">2º Ano B</option>
+                                        <option value="3ºA">3º Ano A</option>
+                                        <option value="3ºB">3º Ano B</option>
+                                        <option value="Geral">Geral</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="assignStudentGroup" style="display: none;">
+                                    <label for="assignStudentSelect">Selecione o Aluno:</label>
+                                    <select id="assignStudentSelect">
+                                        <option value="todos">Todos da Turma</option>
+                                        <!-- Preenchido dinamicamente via JS -->
+                                    </select>
+                                </div>
+                                
+                                <div class="form-actions" style="margin-top: 20px;">
+                                    <button class="btn-secondary" onclick="closeAssignModal()">Cancelar</button>
+                                    <button class="btn-success" onclick="confirmAssignLesson()">Confirmar Atribuição</button>
+                                </div>
                             </div>
                         </div>
 

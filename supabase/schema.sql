@@ -64,6 +64,33 @@ CREATE TABLE IF NOT EXISTS public.analise_bloom (
 -- Habilitar RLS para Análise Bloom
 ALTER TABLE public.analise_bloom ENABLE ROW LEVEL SECURITY;
 
+-- 5. Tabela de Aulas (Criadas pelo Professor)
+CREATE TABLE IF NOT EXISTS public.aulas (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    professor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    series TEXT,
+    code TEXT UNIQUE NOT NULL,
+    questions JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.aulas ENABLE ROW LEVEL SECURITY;
+
+-- 6. Tabela de Aulas Atribuídas (Ligação entre Aula e Turma/Aluno)
+CREATE TABLE IF NOT EXISTS public.aulas_atribuidas (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    aula_id UUID REFERENCES public.aulas(id) ON DELETE CASCADE NOT NULL,
+    turma TEXT,
+    aluno_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    atribuido_por UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CHECK (turma IS NOT NULL OR aluno_id IS NOT NULL)
+);
+
+ALTER TABLE public.aulas_atribuidas ENABLE ROW LEVEL SECURITY;
+
 -- =====================================================================
 -- FUNÇÃO DE SEGURANÇA (SECURITY DEFINER)
 -- Evita a recursão infinita ao checar RLS na tabela profiles
@@ -122,8 +149,25 @@ CREATE POLICY "Alunos podem visualizar suas próprias sessões" ON public.sessoe
 CREATE POLICY "Alunos podem criar suas próprias sessões" ON public.sessoes_aula
     FOR INSERT WITH CHECK (auth.uid() = aluno_id);
 
-CREATE POLICY "Alunos podem atualizar suas próprias sessões" ON public.sessoes_aula
+CREATE POLICY "Alunos atualizam resumos das sessões" ON public.sessoes_aula
     FOR UPDATE USING (auth.uid() = aluno_id);
+
+-- Políticas para Aulas
+CREATE POLICY "Docentes gerenciam aulas" ON public.aulas
+    FOR ALL USING (public.get_user_role(auth.uid()) IN ('professor', 'admin'));
+
+CREATE POLICY "Alunos visualizam aulas" ON public.aulas
+    FOR SELECT USING (true);
+
+-- Políticas para Atribuições de Aulas
+CREATE POLICY "Docentes gerenciam atribuicoes" ON public.aulas_atribuidas
+    FOR ALL USING (public.get_user_role(auth.uid()) IN ('professor', 'admin'));
+
+CREATE POLICY "Alunos visualizam atribuicoes" ON public.aulas_atribuidas
+    FOR SELECT USING (
+        aluno_id = auth.uid() OR 
+        turma IN (SELECT p.turma FROM public.profiles p WHERE p.id = auth.uid())
+    );
 
 -- Políticas para Respostas dos Alunos
 CREATE POLICY "Alunos podem visualizar suas respostas" ON public.respostas_alunos

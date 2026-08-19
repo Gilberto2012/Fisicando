@@ -127,12 +127,12 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 
         // Aprovado
         if (profile.role === 'aluno') {
-            setupStudentSession(profile);
+            await setupStudentSession(profile);
             document.getElementById('btnRoleProfessor').style.display = 'none';
             document.getElementById('btnRolePresentation').style.display = 'none';
         } else if (profile.role === 'professor' || profile.role === 'admin') {
             setupProfessorSession(profile);
-            setupStudentSession(profile, true); // Professores e admins também ganham acesso à área do aluno para testes, mas sem mudar a tela na hora do login
+            await setupStudentSession(profile, true); // Professores e admins também ganham acesso à área do aluno para testes, mas sem mudar a tela na hora do login
             if (profile.role === 'admin') {
                 document.getElementById('btnProfTabModeration').style.display = 'block';
             }
@@ -220,7 +220,7 @@ function toggleSignupRole() {
     document.getElementById('signupTurmaGroup').style.display = role === 'aluno' ? 'block' : 'none';
 }
 
-function setupStudentSession(profile, skipViewSwitch = false) {
+async function setupStudentSession(profile, skipViewSwitch = false) {
     studentSession = {
         id: profile.id,
         name: profile.nome,
@@ -231,15 +231,35 @@ function setupStudentSession(profile, skipViewSwitch = false) {
         startTime: new Date()
     };
 
-    activeLesson = {
-        id: "L-default",
-        title: "Trilha Padrão: Introdução à Cinemática",
-        topic: "Cinemática",
-        series: "1º EM",
-        code: "PADRAO1",
-        questionIds: ["q001", "q002", "q004"]
-    };
-    activeLesson.questions = activeLesson.questionIds.map(id => PHYSICS_QUESTION_BANK.find(q => q.id === id)).filter(Boolean);
+    // Tentar buscar aula atribuída no Supabase
+    const { data: atrib, error } = await supabaseClient
+        .from('aulas_atribuidas')
+        .select(`
+            id,
+            aulas (
+                id, title, topic, series, code, questions
+            )
+        `)
+        .or(`turma.eq.${profile.turma},aluno_id.eq.${profile.id}`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+    if (atrib && atrib.aulas) {
+        activeLesson = atrib.aulas;
+    } else {
+        // Fallback para a trilha padrão caso não haja nenhuma atribuição
+        activeLesson = {
+            id: "L-default",
+            title: "Trilha Padrão: Introdução à Cinemática",
+            topic: "Cinemática",
+            series: "1º EM",
+            code: "PADRAO1",
+            questionIds: ["q001", "q002", "q004"]
+        };
+        activeLesson.questions = activeLesson.questionIds.map(id => PHYSICS_QUESTION_BANK.find(q => q.id === id)).filter(Boolean);
+    }
+    
     activeQuestionIdx = 0;
     studentResponses = [];
     hintCountUsed = 0;
@@ -1372,7 +1392,7 @@ function addManualQuestionField() {
     container.appendChild(qBlock);
 }
 
-function saveManualLesson() {
+async function saveManualLesson() {
     const title = document.getElementById('manLessonTitle').value.trim();
     const topic = document.getElementById('manLessonTopic').value;
 
@@ -1382,7 +1402,7 @@ function saveManualLesson() {
     }
 
     const questionBlocks = document.querySelectorAll('.manual-question-block');
-    const newQuestionIds = [];
+    const questionsToSave = [];
 
     questionBlocks.forEach((block, index) => {
         const enunciado = block.querySelector('.man-q-enunciado').value.trim();
@@ -1407,32 +1427,33 @@ function saveManualLesson() {
                 tags: [topic],
                 explicacao: "Criação manual do professor."
             };
-            PHYSICS_QUESTION_BANK.push(newQ);
-            newQuestionIds.push(newQ.id);
+            questionsToSave.push(newQ);
         }
     });
 
-    if (newQuestionIds.length === 0) {
+    if (questionsToSave.length === 0) {
         alert("Adicione e preencha pelo menos uma questão física.");
         return;
     }
 
-    // Criar código da aula único de 6 caracteres
     const code = 'MAN' + Math.floor(100 + Math.random() * 900);
 
-    const newLesson = {
-        id: 'L_' + Date.now(),
+    const { error } = await supabaseClient.from('aulas').insert([{
+        professor_id: professorSession.id,
         title: title,
         topic: topic,
-        series: "1º EM", // Série padrão
+        series: "1º EM",
         code: code,
-        questionIds: newQuestionIds
-    };
+        questions: questionsToSave
+    }]);
 
-    LocalDB.saveLesson(newLesson);
+    if (error) {
+        alert("Erro ao salvar aula no servidor: " + error.message);
+        return;
+    }
+
     alert(`Aula salva com sucesso! Código para os alunos: ${code}`);
 
-    // Limpar form
     document.getElementById('manLessonTitle').value = '';
     document.getElementById('manQuestionsContainer').innerHTML = '';
     manualQuestionsCount = 0;
@@ -1485,7 +1506,7 @@ function generateAutoLesson() {
     document.getElementById('autoLessonTitleInput').value = `Lição Automatizada de ${topic} (${series})`;
 }
 
-function saveAutoLesson() {
+async function saveAutoLesson() {
     const title = document.getElementById('autoLessonTitleInput').value.trim();
     const series = document.getElementById('autoLessonSeries').value;
     const topic = document.getElementById('autoLessonTopic').value;
@@ -1495,19 +1516,22 @@ function saveAutoLesson() {
         return;
     }
 
-    // Criar código da aula único de 6 caracteres
     const code = 'AUT' + Math.floor(100 + Math.random() * 900);
 
-    const newLesson = {
-        id: 'L_' + Date.now(),
+    const { error } = await supabaseClient.from('aulas').insert([{
+        professor_id: professorSession.id,
         title: title,
         topic: topic,
         series: series,
         code: code,
-        questionIds: generatedAutoQuestionsList.map(q => q.id)
-    };
+        questions: generatedAutoQuestionsList
+    }]);
 
-    LocalDB.saveLesson(newLesson);
+    if (error) {
+        alert("Erro ao salvar aula no servidor: " + error.message);
+        return;
+    }
+
     alert(`Aula automática salva com sucesso! Código da Aula: ${code}`);
 
     document.getElementById('autoLessonPreview').style.display = 'none';
@@ -1560,7 +1584,7 @@ function filterCuratorBank() {
     renderCuratorQuestionsTable();
 }
 
-function saveCuratorLesson() {
+async function saveCuratorLesson() {
     const title = document.getElementById('curatorLessonTitle').value.trim();
     if (!title) {
         alert("Preencha o título da aula por curadoria.");
@@ -1575,26 +1599,28 @@ function saveCuratorLesson() {
         return;
     }
 
-    // Criar código da aula
     const code = 'CUR' + Math.floor(100 + Math.random() * 900);
 
-    const firstSelectedQ = PHYSICS_QUESTION_BANK.find(q => q.id === selectedIds[0]);
-    const topic = firstSelectedQ ? firstSelectedQ.tags[0] : "Física";
+    const questionsToSave = selectedIds.map(id => PHYSICS_QUESTION_BANK.find(q => q.id === id)).filter(Boolean);
+    const topic = questionsToSave[0] ? questionsToSave[0].tags[0] : "Física";
 
-    const newLesson = {
-        id: 'L_' + Date.now(),
+    const { error } = await supabaseClient.from('aulas').insert([{
+        professor_id: professorSession.id,
         title: title,
         topic: topic,
-        series: "3º EM", // Curadoria voltada ao 3º EM por padrão
+        series: "3º EM",
         code: code,
-        questionIds: selectedIds
-    };
+        questions: questionsToSave
+    }]);
 
-    LocalDB.saveLesson(newLesson);
+    if (error) {
+        alert("Erro ao salvar aula no servidor: " + error.message);
+        return;
+    }
+
     alert(`Aula por Curadoria salva com sucesso! Código da Aula: ${code}`);
 
     document.getElementById('curatorLessonTitle').value = '';
-    // Desmarcar todos
     document.querySelectorAll('.curator-select-cb:checked').forEach(cb => cb.checked = false);
     renderCreatedLessonsList();
 }
@@ -1690,13 +1716,29 @@ function applyPromptToAllClasses() {
     alert("Prompt replicado para todas as séries do Ensino Médio!");
 }
 
-function renderCreatedLessonsList() {
+async function renderCreatedLessonsList() {
     const tbody = document.getElementById('createdLessonsTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '';
-    const lessons = LocalDB.getLessons();
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Carregando aulas...</td></tr>';
 
+    const { data: lessons, error } = await supabaseClient
+        .from('aulas')
+        .select('*')
+        .eq('professor_id', professorSession.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Erro ao carregar: ${error.message}</td></tr>`;
+        return;
+    }
+
+    if (!lessons || lessons.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhuma aula criada ainda.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
     lessons.forEach(l => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -1704,10 +1746,110 @@ function renderCreatedLessonsList() {
             <td>${l.title}</td>
             <td>${l.topic}</td>
             <td>${l.series}</td>
-            <td>${l.questionIds.length} questões</td>
+            <td>${l.questions.length} questões</td>
+            <td>
+                <button class="btn-success btn-sm" onclick="openAssignModal('${l.id}', '${l.code}')">🔗 Atribuir</button>
+            </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+function openAssignModal(aulaId, aulaCode) {
+    document.getElementById('assignLessonIdInput').value = aulaId;
+    document.getElementById('assignLessonCodeDisplay').textContent = aulaCode;
+    
+    // Reset selections
+    document.getElementById('assignClassSelect').value = '';
+    document.getElementById('assignStudentGroup').style.display = 'none';
+    document.getElementById('assignStudentSelect').innerHTML = '<option value="todos">Todos da Turma</option>';
+
+    document.getElementById('assignLessonModal').style.display = 'flex';
+}
+
+function closeAssignModal() {
+    document.getElementById('assignLessonModal').style.display = 'none';
+}
+
+async function loadStudentsForAssignment() {
+    const turma = document.getElementById('assignClassSelect').value;
+    const studentGroup = document.getElementById('assignStudentGroup');
+    const studentSelect = document.getElementById('assignStudentSelect');
+    
+    if (!turma) {
+        studentGroup.style.display = 'none';
+        return;
+    }
+
+    studentSelect.innerHTML = '<option value="todos">Carregando...</option>';
+    studentGroup.style.display = 'block';
+
+    const { data: students, error } = await supabaseClient
+        .from('profiles')
+        .select('id, nome')
+        .eq('role', 'aluno')
+        .eq('turma', turma)
+        .order('nome', { ascending: true });
+
+    if (error) {
+        studentSelect.innerHTML = '<option value="todos">Erro ao carregar alunos</option>';
+        return;
+    }
+
+    studentSelect.innerHTML = '<option value="todos">Todos da Turma</option>';
+    
+    if (students && students.length > 0) {
+        students.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.nome;
+            studentSelect.appendChild(opt);
+        });
+    } else {
+        const opt = document.createElement('option');
+        opt.value = "todos";
+        opt.textContent = "Nenhum aluno cadastrado nesta turma";
+        studentSelect.appendChild(opt);
+    }
+}
+
+async function confirmAssignLesson() {
+    const aulaId = document.getElementById('assignLessonIdInput').value;
+    const turma = document.getElementById('assignClassSelect').value;
+    const alunoId = document.getElementById('assignStudentSelect').value;
+
+    if (!turma) {
+        alert("Por favor, selecione uma turma.");
+        return;
+    }
+
+    let insertData = {
+        aula_id: aulaId,
+        atribuido_por: professorSession.id
+    };
+
+    if (alunoId === 'todos') {
+        insertData.turma = turma;
+    } else {
+        insertData.aluno_id = alunoId;
+        // Opcional: Ainda guardar a turma para fins de filtro nos relatórios
+        insertData.turma = turma;
+    }
+
+    const { error } = await supabaseClient.from('aulas_atribuidas').insert([insertData]);
+
+    if (error) {
+        alert("Erro ao atribuir aula: " + error.message);
+        return;
+    }
+
+    if (alunoId === 'todos') {
+        alert(`Aula atribuída com sucesso para toda a turma ${turma}!`);
+    } else {
+        const nomeAluno = document.getElementById('assignStudentSelect').options[document.getElementById('assignStudentSelect').selectedIndex].text;
+        alert(`Aula atribuída com sucesso para o aluno ${nomeAluno} (${turma})!`);
+    }
+    closeAssignModal();
 }
 
 // =====================================================================
