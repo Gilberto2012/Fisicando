@@ -128,12 +128,16 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
         // Aprovado
         if (profile.role === 'aluno') {
             setupStudentSession(profile);
+            document.getElementById('btnRoleProfessor').style.display = 'none';
+            document.getElementById('btnRolePresentation').style.display = 'none';
         } else if (profile.role === 'professor' || profile.role === 'admin') {
             setupProfessorSession(profile);
             setupStudentSession(profile, true); // Professores e admins também ganham acesso à área do aluno para testes, mas sem mudar a tela na hora do login
             if (profile.role === 'admin') {
                 document.getElementById('btnProfTabModeration').style.display = 'block';
             }
+            document.getElementById('btnRoleProfessor').style.display = 'inline-block';
+            document.getElementById('btnRolePresentation').style.display = 'inline-block';
         }
         
         // Mostrar botão de logout
@@ -144,6 +148,8 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
         document.getElementById('studentWorkspace').style.display = 'none';
         document.getElementById('studentLoginCard').style.display = 'block';
         document.getElementById('btnLogout').style.display = 'none';
+        document.getElementById('btnRoleProfessor').style.display = 'inline-block';
+        document.getElementById('btnRolePresentation').style.display = 'inline-block';
         switchView('student');
     }
 });
