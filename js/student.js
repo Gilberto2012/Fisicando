@@ -149,7 +149,7 @@ async function sendStudentMessage() {
             document.getElementById('studentTypingIndicator').style.display = 'none';
             const mock = generateMockAIPedagogicalResponse(currentQuestion, text, activePersona, studentSession.name, activeQuestionIdx);
             score = mock.score;
-            feedback = mock.feedback;
+            feedback = "⚠️ **[AVISO: Você está usando o robô offline porque a Chave API do Gemini falhou ou não está configurada]**\n\n" + mock.feedback;
             detectedKeywords = mock.detectedKeywords;
             
             if (score < 8) feedback = `*(Um bom físico nunca desiste!)*\n\n` + feedback;
@@ -160,7 +160,7 @@ async function sendStudentMessage() {
         document.getElementById('studentTypingIndicator').style.display = 'none';
         const mock = generateMockAIPedagogicalResponse(currentQuestion, text, activePersona, studentSession.name, activeQuestionIdx);
         score = mock.score;
-        feedback = mock.feedback;
+        feedback = "⚠️ **[AVISO: Configuração Incompleta! Você está conversando com a Heurística Local (Robótica). Clique no botão ⚙️ Configurar no topo direito e insira sua Chave do Gemini para habilitar o verdadeiro Tutor Socrático]**\n\n" + mock.feedback;
         detectedKeywords = mock.detectedKeywords;
 
         if (score < 8) feedback = `*(Continue tentando!)*\n\n` + feedback;
