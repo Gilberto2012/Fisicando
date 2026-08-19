@@ -113,7 +113,7 @@ async function sendStudentMessage() {
                     document.getElementById('studentTypingIndicator').style.display = 'none';
                     
                     // Limpar as marcações no chunk
-                    let cleanChunk = chunk.replace(/---SCORE---[\s\S]*/, "").replace(/---SIMULATOR---[\s\S]*/, "");
+                    let cleanChunk = chunk.replace(/---SCORE---[\s\S]*/, "").replace(/---SIMULATOR---[\s\S]*/, "").replace(/---VIDEO---[\s\S]*/, "");
                     streamBubble.innerHTML = cleanChunk || "<span class='typing-indicator'>...</span>";
                     document.getElementById('studentChatMessages').scrollTop = document.getElementById('studentChatMessages').scrollHeight;
                 }
@@ -140,6 +140,10 @@ async function sendStudentMessage() {
                 applyDynamicScenario(apiResult.simulatorParams);
             }
             
+            // Injetar o Vídeo recomendado
+            if (apiResult.videoParams && typeof applyDynamicVideo === 'function') {
+                applyDynamicVideo(apiResult.videoParams);
+            }
         } catch (e) {
             console.error("Falha ao chamar a API do Gemini. Usando fallback local.", e);
             document.getElementById('studentTypingIndicator').style.display = 'none';

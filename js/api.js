@@ -32,7 +32,10 @@ Responda APENAS no seguinte formato, substituindo os colchetes pelo seu conteúd
 [Número decimal de 0.0 a 10.0 representando a precisão física e adequação da resposta do aluno]
 
 ---SIMULATOR---
-[OPCIONAL: Apenas se você quiser alterar o cenário atual do simulador para exemplificar sua explicação, envie um JSON neste formato exato (sem texto a mais): {"v0": 20, "a": -5, "x0": 0}. Senão, omita a tag ---SIMULATOR---]`
+[OPCIONAL: Apenas se você quiser alterar o cenário atual do simulador para exemplificar sua explicação, envie um JSON neste formato exato (sem texto a mais): {"v0": 20, "a": -5, "x0": 0}. Senão, omita a tag ---SIMULATOR---]
+
+---VIDEO---
+[OPCIONAL: Se a dúvida do aluno for melhor explicada com um vídeo complementar do YouTube, envie um JSON exato com url e title: {"url": "https://www.youtube.com/embed/IdDoVideo", "title": "Revisão MUV"}. Senão, omita a tag ---VIDEO---]`
             }]
         }]
     };
@@ -79,6 +82,7 @@ Responda APENAS no seguinte formato, substituindo os colchetes pelo seu conteúd
     let score = 0;
     let feedback = fullText;
     let simulatorParams = null;
+    let videoParams = null;
 
     const scoreMatch = fullText.match(/---SCORE---\s*([\d.]+)/);
     if (scoreMatch) {
@@ -93,14 +97,23 @@ Responda APENAS no seguinte formato, substituindo os colchetes pelo seu conteúd
             feedback = feedback.replace(simMatch[0], "").trim();
         } catch(e) {}
     }
+
+    const videoMatch = fullText.match(/---VIDEO---\s*({[^}]+})/);
+    if (videoMatch) {
+        try {
+            videoParams = JSON.parse(videoMatch[1]);
+            feedback = feedback.replace(videoMatch[0], "").trim();
+        } catch(e) {}
+    }
     
     // Limpar restos de tags que possam ter ficado
-    feedback = feedback.replace(/---SCORE---/g, "").replace(/---SIMULATOR---/g, "").trim();
+    feedback = feedback.replace(/---SCORE---/g, "").replace(/---SIMULATOR---/g, "").replace(/---VIDEO---/g, "").trim();
 
     return {
         score,
         feedback,
-        simulatorParams
+        simulatorParams,
+        videoParams
     };
 }
 
