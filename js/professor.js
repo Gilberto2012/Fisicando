@@ -1,26 +1,7 @@
 // =====================================================================
 // MODO PROFESSOR: CRIAÇÃO DE AULA
 // =====================================================================
-function switchProfessorTab(tabName) {
-    activeProfessorTab = tabName;
-    document.getElementById('btnProfTabLessons').classList.remove('active');
-    document.getElementById('btnProfTabAnalytics').classList.remove('active');
-
-    if (tabName === 'lessons') document.getElementById('btnProfTabLessons').classList.add('active');
-    if (tabName === 'analytics') document.getElementById('btnProfTabAnalytics').classList.add('active');
-
-    document.getElementById('profTabLessons').classList.remove('active');
-    document.getElementById('profTabAnalytics').classList.remove('active');
-
-    if (tabName === 'lessons') {
-        document.getElementById('profTabLessons').classList.add('active');
-        renderCreatedLessonsList();
-    }
-    if (tabName === 'analytics') {
-        document.getElementById('profTabAnalytics').classList.add('active');
-        renderAnalyticsDashboard();
-    }
-}
+// (Função switchProfessorTab original foi movida para o final do arquivo e unificada)
 
 function switchCreationMode(modeName) {
     activeCreationMode = modeName;
@@ -968,7 +949,8 @@ function switchProfessorTab(tabId) {
         'lessons': 'btnProfTabLessons',
         'assign': 'btnProfTabAssign',
         'analytics': 'btnProfTabAnalytics',
-        'moderation': 'btnProfTabModeration'
+        'moderation': 'btnProfTabModeration',
+        'students': 'btnProfTabStudents'
     };
     
     const btnId = btnIdMap[tabId];
@@ -980,6 +962,7 @@ function switchProfessorTab(tabId) {
     if (tabId === 'assign') panelId = 'profTabAssign';
     if (tabId === 'analytics') panelId = 'profTabAnalytics';
     if (tabId === 'moderation') panelId = 'profTabModeration';
+    if (tabId === 'students') panelId = 'profTabStudents';
     
     const panel = document.getElementById(panelId);
     if(panel) panel.classList.add('active');
@@ -989,6 +972,9 @@ function switchProfessorTab(tabId) {
     }
     if (tabId === 'assign') {
         loadAssignPanelLessons();
+    }
+    if (tabId === 'students') {
+        loadStudentsClass();
     }
 }
 
@@ -1160,5 +1146,62 @@ async function blockUser(id) {
         alert("Usuário bloqueado.");
         loadPendingUsers();
     }
+}
+
+// =====================================================================
+// GESTÃO DE ALUNOS E TURMAS
+// =====================================================================
+
+async function loadStudentsClass() {
+    const tbody = document.getElementById('studentsClassTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Carregando alunos...</td></tr>';
+    
+    const filterClass = document.getElementById('filterStudentClass').value;
+    
+    let query = supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('role', 'aluno')
+        .order('nome', { ascending: true });
+        
+    if (filterClass !== 'Todos') {
+        query = query.eq('turma', filterClass);
+    }
+    
+    const { data: students, error } = await query;
+    
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">Erro ao carregar: ${error.message}</td></tr>`;
+        return;
+    }
+    
+    if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum aluno encontrado nesta turma.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    students.forEach(student => {
+        const tr = document.createElement('tr');
+        
+        let statusBadge = '';
+        if (student.status === 'aprovado') {
+            statusBadge = '<span class="status-indicator online" style="display:inline-block; position:static;">Aprovado</span>';
+        } else if (student.status === 'pendente') {
+            statusBadge = '<span style="color: #f39c12; font-weight: bold;">Pendente</span>';
+        } else {
+            statusBadge = '<span style="color: #e74c3c; font-weight: bold;">Bloqueado</span>';
+        }
+        
+        tr.innerHTML = `
+            <td>${student.nome}</td>
+            <td>${student.email || '-'}</td>
+            <td>${student.turma || '-'}</td>
+            <td>${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 

@@ -421,6 +421,8 @@
                                 onclick="switchProfessorTab('assign')">🔗 Atribuir Aula</button>
                             <button class="prof-nav-btn" id="btnProfTabAnalytics"
                                 onclick="switchProfessorTab('analytics')">📊 Relatórios e Análises</button>
+                            <button class="prof-nav-btn" id="btnProfTabStudents"
+                                onclick="switchProfessorTab('students')">👥 Gestão de Alunos</button>
                             <button class="prof-nav-btn" id="btnProfTabModeration"
                                 onclick="switchProfessorTab('moderation')">🛡️ Moderação</button>
                         </nav>
@@ -428,6 +430,45 @@
 
                     <!-- Área de Conteúdo do Professor -->
                     <section class="professor-content-area">
+
+                        <!-- ABA: GESTÃO DE ALUNOS -->
+                        <div id="profTabStudents" class="prof-tab-panel">
+                            <div class="lesson-creation-header">
+                                <h2>Gestão de Alunos e Turmas</h2>
+                                <p>Visualize os alunos cadastrados por turma.</p>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 20px; max-width: 300px;">
+                                <label for="filterStudentClass">Filtrar por Turma</label>
+                                <select id="filterStudentClass" onchange="loadStudentsClass()">
+                                    <option value="Todos">Todas as Turmas</option>
+                                    <option value="1ºA">1º Ano A</option>
+                                    <option value="1ºB">1º Ano B</option>
+                                    <option value="2ºA">2º Ano A</option>
+                                    <option value="2ºB">2º Ano B</option>
+                                    <option value="3ºA">3º Ano A</option>
+                                    <option value="3ºB">3º Ano B</option>
+                                </select>
+                            </div>
+                            
+                            <div class="card" style="margin-top: 20px;">
+                                <table class="table-styled" style="width: 100%; text-align: left;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>E-mail</th>
+                                            <th>Turma</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentsClassTableBody">
+                                        <tr>
+                                            <td colspan="4" style="text-align: center;">Carregando alunos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
                         <!-- ABA: MODERAÇÃO -->
                         <div id="profTabModeration" class="prof-tab-panel">
