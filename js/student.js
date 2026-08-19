@@ -62,6 +62,8 @@ function appendChatBubble(htmlContent, sender) {
 
     chatContainer.appendChild(msgDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    return msgDiv.querySelector('.bubble');
 }
 
 // Envio de mensagem pelo aluno
@@ -94,43 +96,71 @@ async function sendStudentMessage() {
     const activePersona = localStorage.getItem('PHYS_ACTIVE_PERSONA') || 'tutor';
 
     if (systemSettings.geminiApiKey) {
-        // Chamada real ao Gemini API
+        // Chamada real ao Gemini API (com Streaming)
         try {
+            // Criar a bolha de chat provisória para o streaming
+            const streamBubble = appendChatBubble("<span class='typing-indicator'>...</span>", 'teacher');
+
             const apiResult = await callGeminiAPI(
                 systemSettings.geminiApiKey,
                 studentSession.name,
                 currentQuestion,
                 text,
                 classPrompt,
-                activePersona
+                activePersona,
+                (chunk) => {
+                    // Ocultar o indicador padrão de digitação do topo, pois a própria bolha está sendo escrita
+                    document.getElementById('studentTypingIndicator').style.display = 'none';
+                    
+                    // Limpar as marcações no chunk
+                    let cleanChunk = chunk.replace(/---SCORE---[\s\S]*/, "").replace(/---SIMULATOR---[\s\S]*/, "");
+                    streamBubble.innerHTML = cleanChunk || "<span class='typing-indicator'>...</span>";
+                    document.getElementById('studentChatMessages').scrollTop = document.getElementById('studentChatMessages').scrollHeight;
+                }
             );
-            score = apiResult.score;
+            
+            score = apiResult.score || 0;
             feedback = apiResult.feedback;
+            
+            // Dica motivacional no final
+            if (score < 8) {
+                const motivationalTips = [
+                    "Pense mais um pouco...",
+                    "Você está no caminho certo, continue tentando!",
+                    "Tente lembrar das variáveis que a questão te forneceu.",
+                    "Um bom físico nunca desiste! Dê uma olhada no resumo teórico ao lado."
+                ];
+                const randomTip = motivationalTips[Math.floor(Math.random() * motivationalTips.length)];
+                feedback = `*(${randomTip})*\n\n` + feedback;
+            }
+            streamBubble.innerHTML = feedback;
+
+            // Injetar os parâmetros no Simulador
+            if (apiResult.simulatorParams && typeof applyDynamicScenario === 'function') {
+                applyDynamicScenario(apiResult.simulatorParams);
+            }
+            
         } catch (e) {
             console.error("Falha ao chamar a API do Gemini. Usando fallback local.", e);
+            document.getElementById('studentTypingIndicator').style.display = 'none';
             const mock = generateMockAIPedagogicalResponse(currentQuestion, text, activePersona, studentSession.name, activeQuestionIdx);
             score = mock.score;
             feedback = mock.feedback;
             detectedKeywords = mock.detectedKeywords;
+            
+            if (score < 8) feedback = `*(Um bom físico nunca desiste!)*\n\n` + feedback;
+            appendChatBubble(feedback, 'teacher');
         }
     } else {
         // Sem chave: Heurística Local
+        document.getElementById('studentTypingIndicator').style.display = 'none';
         const mock = generateMockAIPedagogicalResponse(currentQuestion, text, activePersona, studentSession.name, activeQuestionIdx);
         score = mock.score;
         feedback = mock.feedback;
         detectedKeywords = mock.detectedKeywords;
-    }
 
-    // Dicas motivacionais aleatórias em caso de notas medianas/baixas
-    if (score < 8) {
-        const motivationalTips = [
-            "Pense mais um pouco...",
-            "Você está no caminho certo, continue tentando!",
-            "Tente lembrar das variáveis que a questão te forneceu.",
-            "Um bom físico nunca desiste! Dê uma olhada no resumo teórico ao lado."
-        ];
-        const randomTip = motivationalTips[Math.floor(Math.random() * motivationalTips.length)];
-        feedback = `*(${randomTip})*\n\n` + feedback;
+        if (score < 8) feedback = `*(Continue tentando!)*\n\n` + feedback;
+        appendChatBubble(feedback, 'teacher');
     }
 
     // Salvar resposta no log local
@@ -146,24 +176,14 @@ async function sendStudentMessage() {
     // Recompensas de Gamificação e XP
     let xpEarned = 0;
     if (score >= 8) {
-        // Acerto completo: 100 XP base, reduzindo 25 XP por dica
         xpEarned = Math.max(25, 100 - (hintCountUsed * 25));
     } else if (score >= 5) {
-        // Acerto parcial
         xpEarned = Math.max(15, 50 - (hintCountUsed * 10));
     } else {
-        // Participação
         xpEarned = 10;
     }
     
-    // Atualizar XP e verificar nível
     addStudentXp(xpEarned);
-
-    // Ocultar indicador de digitação
-    document.getElementById('studentTypingIndicator').style.display = 'none';
-
-    // Imprimir bolha do tutor com feedback e botão de avançar
-    appendChatBubble(feedback, 'teacher');
 
     // Botão para avançar de questão injetado no chat
     const btnNext = document.createElement('button');

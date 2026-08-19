@@ -175,3 +175,42 @@ function showExplanationTab() {
     switchMultimediaSubTab('theory');
 }
 
+// Aplica parâmetros dinâmicos enviados pela IA para o simulador
+function applyDynamicScenario(params) {
+    if (!params) return;
+
+    if (params.v0 !== undefined) {
+        const v0Slider = document.getElementById('v0Slider');
+        if (v0Slider) {
+            v0Slider.value = params.v0;
+            document.getElementById('v0Val').textContent = params.v0;
+        }
+    }
+    
+    if (params.a !== undefined) {
+        const accSlider = document.getElementById('accSlider');
+        if (accSlider) {
+            accSlider.value = params.a;
+            document.getElementById('accVal').textContent = params.a;
+        }
+    }
+
+    // Foca na aba do simulador
+    switchStudentTab('multimedia');
+    switchMultimediaSubTab('simulator');
+
+    if (window.simulator) {
+        // Pausa para reiniciar com os novos valores
+        window.simulator.pause();
+        window.simulator.setParams(
+            params.v0 !== undefined ? params.v0 : window.simulator.initialVelocity, 
+            params.a !== undefined ? params.a : window.simulator.acceleration
+        );
+        
+        setTimeout(() => {
+            window.simulator.start();
+            const btn = document.getElementById('simPlayBtn');
+            if (btn) btn.textContent = '⏸️ Pausar';
+        }, 100);
+    }
+}
