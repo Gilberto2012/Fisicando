@@ -9,6 +9,7 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentView = 'student'; // student | professor | presentation
 let studentSession = null;  // Dados do aluno logado: { name, class, lesson, start, xp, level, badges }
+let professorSession = null;
 let activeLesson = null;     // Aula em andamento: { id, title, topic, series, code, questionIds, questions }
 let activeQuestionIdx = 0;   // Índice da pergunta atual no fluxo da aula
 let hintCountUsed = 0;       // Quantas dicas o aluno já pediu na questão atual
@@ -282,6 +283,7 @@ async function setupStudentSession(profile, skipViewSwitch = false) {
 }
 
 function setupProfessorSession(profile) {
+    professorSession = profile;
     document.getElementById('studentNameDisplay').textContent = profile.nome + ' (Prof)';
     switchView('professor');
 }
